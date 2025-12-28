@@ -61,17 +61,17 @@ export default function FinanceiroPage() {
     }
 
     return (
-        <div className="p-6 space-y-8 max-w-7xl mx-auto">
+        <div className="space-y-8 max-w-7xl mx-auto px-4 md:px-6 py-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Financeiro</h1>
                     <p className="text-slate-500 dark:text-zinc-400 font-medium">Controle seu fluxo de caixa e comissões.</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" className="rounded-xl border-slate-200 dark:border-zinc-800">
+                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                    <Button variant="outline" className="rounded-xl border-slate-200 dark:border-zinc-800 w-full md:w-auto">
                         <Download className="w-4 h-4 mr-2" /> Exportar PDF
                     </Button>
-                    <Button className="rounded-xl bg-primary text-white font-bold">
+                    <Button className="rounded-xl bg-primary text-white font-bold w-full md:w-auto">
                         Gerar Relatório Completo
                     </Button>
                 </div>
@@ -82,7 +82,7 @@ export default function FinanceiroPage() {
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+                className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"
             >
                 <motion.div variants={itemVariants}>
                     <Card className="p-6 rounded-[2rem] border-none shadow-sm bg-primary text-white relative overflow-hidden h-full">
@@ -152,11 +152,13 @@ export default function FinanceiroPage() {
                 </motion.div>
             </motion.div>
 
-            <PdvQuickHub tenantId={currentTenant.id} />
+            <div className="rounded-[2rem] border border-black/5 dark:border-white/5 bg-white/70 dark:bg-zinc-900/70 backdrop-blur p-4 sm:p-6">
+                <PdvQuickHub tenantId={currentTenant.id} />
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Transactions Table */}
-                <Card className="lg:col-span-2 rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-8">
+                <Card className="lg:col-span-2 rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-6 sm:p-8">
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">Últimas Transações</h3>
@@ -207,7 +209,7 @@ export default function FinanceiroPage() {
                 </Card>
 
                 {/* Staff Commissions List */}
-                <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-8 space-y-8">
+                <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-6 sm:p-8 space-y-8">
                     <div>
                         <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">Comissões</h3>
                         <p className="text-slate-500 text-xs">Total a pagar por profissional.</p>

@@ -108,17 +108,19 @@ export default function DashboardPage() {
                 </Card>
             </div>
 
-            <OnboardingChecklist
-                tenant={currentTenant}
-                className="mt-2"
-                onStartWizard={() => setIsWizardOpen(true)}
-            />
+            <div className="grid gap-6 lg:grid-cols-2">
+                <OnboardingChecklist
+                    tenant={currentTenant}
+                    className="mt-2"
+                    onStartWizard={() => setIsWizardOpen(true)}
+                />
+                <AccountHealthCard tenantId={currentTenant.id} />
+            </div>
 
-            <QuickActions />
-
-            <AccountHealthCard tenantId={currentTenant.id} />
-
-            <DailyGoals tenantId={currentTenant.id} />
+            <div className="grid gap-6 lg:grid-cols-2">
+                <QuickActions />
+                <DailyGoals tenantId={currentTenant.id} />
+            </div>
 
             <OnboardingWizard
                 open={isWizardOpen}
@@ -154,7 +156,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
                 {stats.map((stat, i) => (
                     <Card key={i} className="p-6 rounded-[2rem] border-none shadow-sm bg-white dark:bg-zinc-900">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
@@ -174,7 +176,7 @@ export default function DashboardPage() {
 
             <div className="grid gap-8 lg:grid-cols-12">
                 {/* Visual Chart */}
-                <Card className="lg:col-span-8 rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-8 space-y-8">
+                <Card className="lg:col-span-8 rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-6 sm:p-8 space-y-8">
                     <div className="flex items-center justify-between">
                         <div>
                             <h3 className="text-xl font-black text-slate-900 dark:text-white">Performance de Vendas</h3>
@@ -243,7 +245,7 @@ export default function DashboardPage() {
 
                 {/* Status Sidebar */}
                 <div className="lg:col-span-4 space-y-8">
-                    <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-8">
+                    <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-6 sm:p-8">
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-xl font-black text-slate-900 dark:text-white">Agora no Salão</h3>
                             <span className="relative flex h-3 w-3">
@@ -284,7 +286,7 @@ export default function DashboardPage() {
                     </Card>
 
                     {/* Pro Tip */}
-                    <Card className="p-8 rounded-[2.5rem] bg-slate-900 text-white relative overflow-hidden">
+                    <Card className="p-6 sm:p-8 rounded-[2.5rem] bg-slate-900 text-white relative overflow-hidden">
                         <Sparkles className="absolute top-4 right-4 w-6 h-6 text-primary" />
                         <div className="relative z-10 space-y-4">
                             <h4 className="font-black text-lg leading-tight">Dica do Dia</h4>
