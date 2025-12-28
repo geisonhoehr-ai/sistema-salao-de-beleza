@@ -26,6 +26,7 @@ import { tenants } from "@/mocks/tenants"
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp"
 import { services, employees } from "@/mocks/services"
 import { appointments } from "@/mocks/data"
+import { mockCustomers, type Customer } from "@/mocks/customers"
 import { cn } from "@/lib/utils"
 
 type Step = 'service' | 'professional' | 'datetime' | 'client_info' | 'confirmation' | 'payment' | 'success'
@@ -78,7 +79,10 @@ export default function BookingPage() {
     const [clientData, setClientData] = useState({
         name: "",
         email: "",
-        phone: ""
+        phone: "",
+        cpf: "",
+        password: "",
+        isExisting: false
     })
 
     const tenantServices = services.filter(s => s.tenantId === tenant.id)
@@ -91,7 +95,12 @@ export default function BookingPage() {
         if (step === 'service' && selectedService) setStep('professional')
         else if (step === 'professional' && selectedEmployee) setStep('datetime')
         else if (step === 'datetime' && selectedDate && selectedTime) setStep('client_info')
-        else if (step === 'client_info' && clientData.name && clientData.email) setStep('confirmation')
+        else if (step === 'client_info') {
+            if (!clientData.cpf) return;
+            if (clientData.isExisting && !clientData.password) return;
+            if (!clientData.isExisting && (!clientData.name || !clientData.email || !clientData.password)) return;
+            setStep('confirmation')
+        }
         else if (step === 'confirmation') setStep('payment')
     }
 
@@ -140,9 +149,12 @@ export default function BookingPage() {
                                     {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })} às {selectedTime}
                                 </p>
                             </div>
-                            <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] bg-primary/5 px-3 py-1 rounded-full">
-                                Código: #BF{Math.floor(Math.random() * 9000) + 1000}
-                            </span>
+                            <div className="space-y-2">
+                                <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] bg-primary/5 px-4 py-2 rounded-full border border-primary/10">
+                                    Voucher: #BF{Math.floor(Math.random() * 9000) + 1000}
+                                </span>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Apresente este código na recepção.</p>
+                            </div>
                         </div>
                     </Card>
 
@@ -435,56 +447,98 @@ export default function BookingPage() {
                                 <p className="text-slate-500 dark:text-zinc-400">Preencha seus dados para finalizarmos o agendamento.</p>
                             </div>
 
-                            <div className="space-y-4 max-w-lg">
+                            <div className="space-y-6 max-w-lg">
+                                {/* CPF Field - Primary ID */}
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Nome Completo</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">CPF (Identificação)</label>
                                     <div className="relative group">
                                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
-                                            <User className="w-5 h-5" />
+                                            <ShieldCheck className="w-5 h-5" />
                                         </div>
                                         <input
                                             type="text"
-                                            placeholder="Como gostaria de ser chamado?"
-                                            value={clientData.name}
-                                            onChange={(e) => setClientData({ ...clientData, name: e.target.value })}
+                                            placeholder="000.000.000-00"
+                                            value={clientData.cpf}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                const existing = mockCustomers.find(c => c.cpf === val);
+                                                setClientData({
+                                                    ...clientData,
+                                                    cpf: val,
+                                                    isExisting: !!existing,
+                                                    name: existing?.name || "",
+                                                    email: existing?.email || ""
+                                                });
+                                            }}
                                             className="w-full h-16 pl-12 pr-4 rounded-2xl border-2 border-transparent bg-white dark:bg-zinc-900 shadow-sm focus:border-primary focus:ring-0 transition-all font-medium text-slate-900 dark:text-white"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">E-mail</label>
-                                    <div className="relative group">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
-                                            <div className="flex items-center justify-center w-5 h-5">
-                                                <span className="text-lg font-bold">@</span>
-                                            </div>
-                                        </div>
-                                        <input
-                                            type="email"
-                                            placeholder="seu@email.com"
-                                            value={clientData.email}
-                                            onChange={(e) => setClientData({ ...clientData, email: e.target.value })}
-                                            className="w-full h-16 pl-12 pr-4 rounded-2xl border-2 border-transparent bg-white dark:bg-zinc-900 shadow-sm focus:border-primary focus:ring-0 transition-all font-medium text-slate-900 dark:text-white"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Celular / WhatsApp</label>
-                                    <div className="relative group">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
-                                            <Phone className="w-5 h-5" />
-                                        </div>
-                                        <input
-                                            type="tel"
-                                            placeholder="(00) 00000-0000"
-                                            value={clientData.phone}
-                                            onChange={(e) => setClientData({ ...clientData, phone: e.target.value })}
-                                            className="w-full h-16 pl-12 pr-4 rounded-2xl border-2 border-transparent bg-white dark:bg-zinc-900 shadow-sm focus:border-primary focus:ring-0 transition-all font-medium text-slate-900 dark:text-white"
-                                        />
-                                    </div>
-                                </div>
+                                <AnimatePresence mode="wait">
+                                    {clientData.cpf.length >= 11 && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            className="space-y-4 overflow-hidden"
+                                        >
+                                            {clientData.isExisting ? (
+                                                <div className="space-y-4">
+                                                    <Badge className="bg-emerald-500/10 text-emerald-500 border-none rounded-full px-3 py-1">
+                                                        Cliente Identificado: {clientData.name}
+                                                    </Badge>
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Sua Senha</label>
+                                                        <input
+                                                            type="password"
+                                                            placeholder="••••••••"
+                                                            value={clientData.password}
+                                                            onChange={(e) => setClientData({ ...clientData, password: e.target.value })}
+                                                            className="w-full h-16 px-6 rounded-2xl border-2 border-transparent bg-white dark:bg-zinc-900 shadow-sm focus:border-primary focus:ring-0 transition-all font-medium text-slate-900 dark:text-white"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    <Badge className="bg-primary/10 text-primary border-none rounded-full px-3 py-1">
+                                                        Primeiro Acesso: Criar Perfil
+                                                    </Badge>
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Nome Completo</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Como gostaria de ser chamado?"
+                                                            value={clientData.name}
+                                                            onChange={(e) => setClientData({ ...clientData, name: e.target.value })}
+                                                            className="w-full h-16 px-6 rounded-2xl border-2 border-transparent bg-white dark:bg-zinc-900 shadow-sm focus:border-primary focus:ring-0 transition-all font-medium text-slate-900 dark:text-white"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">E-mail</label>
+                                                        <input
+                                                            type="email"
+                                                            placeholder="seu@email.com"
+                                                            value={clientData.email}
+                                                            onChange={(e) => setClientData({ ...clientData, email: e.target.value })}
+                                                            className="w-full h-16 px-6 rounded-2xl border-2 border-transparent bg-white dark:bg-zinc-900 shadow-sm focus:border-primary focus:ring-0 transition-all font-medium text-slate-900 dark:text-white"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Criar Senha para Acesso</label>
+                                                        <input
+                                                            type="password"
+                                                            placeholder="Mínimo 6 caracteres"
+                                                            value={clientData.password}
+                                                            onChange={(e) => setClientData({ ...clientData, password: e.target.value })}
+                                                            className="w-full h-16 px-6 rounded-2xl border-2 border-transparent bg-white dark:bg-zinc-900 shadow-sm focus:border-primary focus:ring-0 transition-all font-medium text-slate-900 dark:text-white"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
                             <Card className="p-6 rounded-[2rem] bg-emerald-500/5 border-emerald-500/10 flex gap-4 items-center">
@@ -492,7 +546,9 @@ export default function BookingPage() {
                                     <Sparkles className="w-5 h-5 text-white" />
                                 </div>
                                 <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
-                                    Pronto! Com esses dados, você poderá consultar seu histórico completo a qualquer momento.
+                                    {clientData.isExisting
+                                        ? "Bom te ver de novo! Entre com sua senha para prosseguir."
+                                        : "Com sua senha, você poderá consultar seu histórico e pontos de fidelidade a qualquer momento."}
                                 </p>
                             </Card>
                         </motion.div>

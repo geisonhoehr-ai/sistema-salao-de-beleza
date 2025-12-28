@@ -14,11 +14,11 @@ import {
     ExternalLink,
     Sparkles,
     History,
-    Target,
     ShieldCheck,
     AlertCircle,
     Bell,
-    ShoppingBag
+    ShoppingBag,
+    Lock
 } from "lucide-react"
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp"
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { tenants } from "@/mocks/tenants"
 import { appointments } from "@/mocks/data"
 import { services } from "@/mocks/services"
+import { mockCustomers } from "@/mocks/customers"
 import { cn } from "@/lib/utils"
 
 export default function CustomerProfilePage() {
@@ -41,15 +42,21 @@ export default function CustomerProfilePage() {
         return tenants.find(t => t.slug === tenantSlug) || tenants[0]
     }, [tenantSlug])
 
+    const customer = useMemo(() => {
+        if (!customerEmail) return null
+        return mockCustomers.find(c => c.email === customerEmail) || {
+            name: customerEmail.split('@')[0],
+            email: customerEmail,
+            points: 150, // Default for non-mocked emails
+            status: 'active'
+        }
+    }, [customerEmail])
+
     // Find all appointments for this email
     const allAppointments = useMemo(() => {
         if (!customerEmail) return []
-        // In a real app, this would be an API call matching by email
-        // We use mock data and filter by customer name as a proxy for the mockup
         return appointments.filter(apt => apt.customer.toLowerCase().includes(customerEmail.split('@')[0].toLowerCase()))
     }, [customerEmail])
-
-    const tenantHistory = allAppointments.filter(apt => apt.tenantId === tenant.id)
 
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
@@ -88,15 +95,15 @@ export default function CustomerProfilePage() {
         }
 
         return (
-            <Card className="p-5 rounded-3xl border-none shadow-sm bg-white dark:bg-zinc-900 hover:shadow-md transition-all active:scale-[0.99] group">
+            <Card className="p-5 rounded-3xl border-none shadow-sm bg-white dark:bg-zinc-900 group">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-xl">
                             {aptTenant?.logo || '🏢'}
                         </div>
                         <div>
-                            <h4 className="font-bold text-slate-900 dark:text-white">{aptTenant?.fullName}</h4>
-                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">{aptService?.name}</p>
+                            <h4 className="font-bold text-slate-900 dark:text-white uppercase text-[10px] tracking-widest">{aptTenant?.name}</h4>
+                            <p className="text-sm font-black text-slate-900 dark:text-white">{aptService?.name}</p>
                         </div>
                     </div>
                     <Badge className={cn(
@@ -134,9 +141,6 @@ export default function CustomerProfilePage() {
                         >
                             {canCancel ? 'Cancelar' : 'Falar com Salão'}
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-9 w-9 rounded-xl text-slate-300 p-0">
-                            <ExternalLink className="w-4 h-4" />
-                        </Button>
                     </div>
                 </div>
             </Card>
@@ -148,10 +152,13 @@ export default function CustomerProfilePage() {
             {/* Header */}
             <header className="sticky top-0 z-40 w-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-zinc-800/50 px-6 py-4">
                 <div className="max-w-2xl mx-auto flex items-center justify-between">
-                    <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+                    <Button variant="ghost" size="icon" onClick={() => router.push(`/${tenantSlug}/book`)} className="rounded-full">
                         <ChevronLeft className="w-5 h-5" />
                     </Button>
-                    <h1 className="text-lg font-black tracking-tight">Meu Perfil</h1>
+                    <div className="text-center">
+                        <h1 className="text-lg font-black tracking-tight">Painel Beauty</h1>
+                        <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] leading-none mt-0.5">Meu Universo {tenant.name}</p>
+                    </div>
                     <div className="flex items-center gap-3">
                         <Button
                             variant="ghost"
@@ -161,32 +168,46 @@ export default function CustomerProfilePage() {
                         >
                             <ShoppingBag className="w-5 h-5 text-slate-400" />
                         </Button>
-                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border-2 border-white dark:border-zinc-900 shadow-sm">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => router.push(`/${tenantSlug}/login`)} // Simulating Logout/Switch
+                            className="rounded-full bg-slate-100 dark:bg-zinc-800"
+                        >
                             <User className="w-5 h-5 text-slate-400" />
-                        </div>
+                        </Button>
                     </div>
                 </div>
             </header>
 
             <main className="max-w-2xl mx-auto p-6 space-y-8">
-                {/* User Info Card */}
+                {/* Loyalty Card */}
                 <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-                    <Card className="p-8 rounded-[2.5rem] border-none shadow-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full -translate-y-12 translate-x-12" />
-                        <div className="relative z-10 space-y-4">
-                            <div className="space-y-1">
-                                <h2 className="text-2xl font-black">{customerEmail.split('@')[0]}</h2>
-                                <p className="text-slate-400 font-medium text-sm">{customerEmail}</p>
+                    <Card className="p-8 rounded-[2.5rem] border-none shadow-2xl bg-slate-900 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2" />
+                        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                            <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Beauty Rewards</p>
+                                    <h2 className="text-4xl font-black">{customer?.name}</h2>
+                                    <p className="text-slate-400 font-medium text-sm">{customer?.email}</p>
+                                </div>
+                                <div className="flex gap-3">
+                                    <Badge className="bg-white/10 backdrop-blur-md text-white border-none rounded-full px-4 py-1.5 font-bold uppercase text-[10px] tracking-widest">
+                                        Nível Diamante
+                                    </Badge>
+                                    <Badge className="bg-emerald-500/20 text-emerald-400 border-none rounded-full px-4 py-1.5 font-bold uppercase text-[10px] tracking-widest">
+                                        Ativo
+                                    </Badge>
+                                </div>
                             </div>
-                            <div className="flex gap-4">
-                                <div className="bg-white/10 backdrop-blur-md rounded-2xl px-4 py-2 flex items-center gap-2">
-                                    <Sparkles className="w-4 h-4 text-yellow-400" />
-                                    <span className="text-xs font-bold uppercase tracking-wider">{allAppointments.length} Visitas</span>
+                            <div className="text-right">
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-1">Saldo Atual</p>
+                                <div className="flex items-center justify-end gap-3 text-primary">
+                                    <Sparkles className="w-10 h-10" />
+                                    <span className="text-6xl font-black tracking-tighter">{(customer as any)?.points || 0}</span>
                                 </div>
-                                <div className="bg-white/10 backdrop-blur-md rounded-2xl px-4 py-2 flex items-center gap-2">
-                                    <Target className="w-4 h-4 text-emerald-400" />
-                                    <span className="text-xs font-bold uppercase tracking-wider">Diamante</span>
-                                </div>
+                                <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">BeautyPoints</p>
                             </div>
                         </div>
                     </Card>
@@ -244,28 +265,51 @@ export default function CustomerProfilePage() {
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="tenant" className="space-y-4">
+                    <TabsContent value="tenant" className="space-y-4 outline-none">
                         <div className="flex items-center justify-between mb-2 px-2">
-                            <h3 className="font-bold text-slate-400 text-xs uppercase tracking-widest flex items-center gap-2">
-                                <MapPin className="w-3 h-3" /> {tenant.fullName}
+                            <h3 className="font-bold text-slate-400 text-[10px] uppercase tracking-widest flex items-center gap-2">
+                                <MapPin className="w-3 h-3" /> Próximas Visitas em {tenant.name}
                             </h3>
                         </div>
-                        {tenantHistory.length > 0 ? (
-                            tenantHistory.map(apt => <AppointmentCard key={apt.id} apt={apt} />)
+                        {allAppointments.filter(apt => apt.status === 'confirmed' || apt.status === 'scheduled').length > 0 ? (
+                            allAppointments
+                                .filter(apt => apt.status === 'confirmed' || apt.status === 'scheduled')
+                                .map(apt => <AppointmentCard key={apt.id} apt={apt} />)
                         ) : (
-                            <div className="py-20 text-center space-y-4">
-                                <div className="w-16 h-16 bg-slate-100 dark:bg-zinc-900 rounded-full flex items-center justify-center mx-auto opacity-50">
-                                    <History className="w-8 h-8 text-slate-300" />
-                                </div>
-                                <p className="text-slate-400 font-medium italic">Nenhum agendamento neste salão ainda.</p>
+                            <div className="py-12 text-center rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-zinc-800">
+                                <Calendar className="w-8 h-8 text-slate-200 mx-auto mb-3" />
+                                <p className="text-slate-400 font-medium italic text-sm">Nenhum agendamento futuro.</p>
                             </div>
                         )}
+
+                        <div className="pt-8 mb-4 px-2">
+                            <h3 className="font-bold text-slate-400 text-[10px] uppercase tracking-widest">Resgate seus Pontos</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Card className="p-6 rounded-3xl border-none bg-primary/5 hover:bg-primary/10 transition-colors">
+                                <div className="flex justify-between items-start mb-4">
+                                    <Badge className="bg-white dark:bg-zinc-800 text-primary border-none rounded-full px-3 font-black">500 PTS</Badge>
+                                    <Sparkles className="w-6 h-6 text-primary" />
+                                </div>
+                                <h4 className="font-bold text-slate-900 dark:text-white">Design de Sobrancelha</h4>
+                                <p className="text-xs text-slate-500 mt-1">Troque seus pontos agora.</p>
+                                <Button className="w-full mt-4 rounded-2xl h-10 font-black text-[10px] uppercase tracking-widest">Resgatar</Button>
+                            </Card>
+                            <Card className="p-6 rounded-3xl border-none bg-slate-100 dark:bg-zinc-800 opacity-60">
+                                <div className="flex justify-between items-start mb-4">
+                                    <Badge className="bg-white dark:bg-zinc-700 text-slate-400 border-none rounded-full px-3 font-black">2000 PTS</Badge>
+                                    <Lock className="w-6 h-6 text-slate-400" />
+                                </div>
+                                <h4 className="font-bold text-slate-900 dark:text-white">Escova + Hidratação</h4>
+                                <p className="text-xs text-slate-500 mt-1">Faltam {(2000 - ((customer as any)?.points || 0))} pontos.</p>
+                            </Card>
+                        </div>
                     </TabsContent>
 
-                    <TabsContent value="all" className="space-y-4">
+                    <TabsContent value="all" className="space-y-4 outline-none">
                         <div className="flex items-center justify-between mb-2 px-2">
-                            <h3 className="font-bold text-slate-400 text-xs uppercase tracking-widest flex items-center gap-2">
-                                <History className="w-3 h-3" /> Todas as empresas
+                            <h3 className="font-bold text-slate-400 text-[10px] uppercase tracking-widest flex items-center gap-2">
+                                <History className="w-3 h-3" /> Histórico Completo
                             </h3>
                         </div>
                         {allAppointments.map(apt => <AppointmentCard key={apt.id} apt={apt} />)}
