@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
 import { cn } from "@/lib/utils"
 import {
     Calendar,
@@ -41,6 +42,7 @@ const menuSections = [
 
 export function Sidebar() {
     const pathname = usePathname()
+    const { logout } = useAuth()
 
     return (
         <aside className="w-64 h-screen sticky top-0 border-r border-black/5 dark:border-white/10 bg-white/70 dark:bg-black/70 backdrop-blur-xl flex flex-col z-40">
@@ -89,7 +91,10 @@ export function Sidebar() {
 
             {/* User / Logout */}
             <div className="p-4 border-t border-black/5 dark:border-white/10">
-                <button className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors">
+                <button
+                    onClick={logout}
+                    className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors"
+                >
                     <LogOut className="w-4 h-4" />
                     Sair
                 </button>
