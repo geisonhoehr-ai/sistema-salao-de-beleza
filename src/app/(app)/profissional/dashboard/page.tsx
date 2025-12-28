@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { appointments, services } from "@/mocks/data"
+import { appointments, services, clients } from "@/mocks/data"
 import { useTenant } from "@/contexts/tenant-context"
 import { useAuth } from "@/contexts/auth-context"
 import {
@@ -25,6 +25,11 @@ export default function ProfissionalDashboard() {
     const todayAppointments = appointments.filter(
         apt => apt.tenantId === currentTenant.id && apt.staffId === "1" // mock: staff 1
     )
+
+    const vipClients = clients
+        .filter(client => client.tenantId === currentTenant.id)
+        .sort((a, b) => b.totalSpent - a.totalSpent)
+        .slice(0, 3)
 
     const metrics = useMemo(() => ({
         revenue: 580,
@@ -107,6 +112,40 @@ export default function ProfissionalDashboard() {
                         <Button className="w-full h-12 rounded-2xl">Iniciar expediente</Button>
                         <Button variant="outline" className="w-full h-12 rounded-2xl">Registrar intervalo</Button>
                         <Button variant="secondary" className="w-full h-12 rounded-2xl">Finalizar dia</Button>
+                    </CardContent>
+                </Card>
+            </section>
+
+            <section className="grid gap-4 lg:grid-cols-2">
+                <Card className="rounded-[2rem] border-none shadow-sm bg-white/80 dark:bg-zinc-900/70">
+                    <CardHeader>
+                        <CardTitle>Ações rápidas</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 gap-3">
+                        {["Registrar venda", "Adicionar nota", "Enviar lembrete", "Ver histórico"].map(action => (
+                            <Button key={action} variant="outline" className="h-12 rounded-2xl justify-start">
+                                {action}
+                            </Button>
+                        ))}
+                    </CardContent>
+                </Card>
+
+                <Card className="rounded-[2rem] border-none shadow-sm bg-white/80 dark:bg-zinc-900/70">
+                    <CardHeader>
+                        <CardTitle>Clientes que amam você</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {vipClients.map(client => (
+                            <div key={client.id} className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{client.name}</p>
+                                    <p className="text-xs text-muted-foreground">Ticket médio R$ {client.totalSpent.toFixed(2)}</p>
+                                </div>
+                                <Badge variant="secondary" className="rounded-full">
+                                    {client.status}
+                                </Badge>
+                            </div>
+                        ))}
                     </CardContent>
                 </Card>
             </section>
