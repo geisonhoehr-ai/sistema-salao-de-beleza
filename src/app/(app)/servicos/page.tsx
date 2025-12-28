@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { services as initialServices, type Service } from "@/mocks/services"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,6 +35,7 @@ import {
     List as ListIcon
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
     Table,
     TableBody,
@@ -44,6 +44,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import { useTenant } from "@/contexts/tenant-context"
+import { employees as initialEmployees, services as initialServices, type Service, type Employee } from "@/mocks/services"
 
 const categories = ["Cabelo", "Unhas", "Maquiagem", "Estética", "Massagem", "Depilação", "Sobrancelha"]
 
@@ -55,6 +57,8 @@ export default function ServicosPage() {
     const [showEditService, setShowEditService] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
     const [selectedService, setSelectedService] = useState<Service | null>(null)
+    const [employees, setEmployees] = useState<Employee[]>(initialEmployees)
+    const { currentTenant } = useTenant()
 
     const [formData, setFormData] = useState({
         name: "",
@@ -67,8 +71,7 @@ export default function ServicosPage() {
         allowOnlineBooking: true,
         bufferBefore: 5,
         bufferAfter: 10,
-        maxClientsPerSlot: 1,
-        requiredStaff: 1
+        professionalIds: [] as string[]
     })
 
     const filteredServices = services.filter(service =>
@@ -77,16 +80,28 @@ export default function ServicosPage() {
     )
 
     const handleCreateService = () => {
+        const newServiceId = String(services.length + 1)
         const newService: Service = {
-            id: String(services.length + 1),
-            tenantId: '1',
+            id: newServiceId,
+            tenantId: currentTenant.id,
             ...formData,
             active: true,
+            maxClientsPerSlot: 1,
+            requiredStaff: 1,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         }
-
         setServices([...services, newService])
+
+        // Sync professionals
+        const updatedEmployees = employees.map(emp => {
+            if (formData.professionalIds.includes(emp.id)) {
+                return { ...emp, specialties: Array.from(new Set([...emp.specialties, newServiceId])) }
+            }
+            return emp
+        })
+        setEmployees(updatedEmployees)
+
         setShowNewService(false)
         resetForm()
     }
@@ -99,6 +114,21 @@ export default function ServicosPage() {
                 ? { ...s, ...formData, updatedAt: new Date().toISOString() }
                 : s
         ))
+
+        // Sync professionals
+        const updatedEmployees = employees.map(emp => {
+            const isAssigned = formData.professionalIds.includes(emp.id)
+            const hasSpecialty = emp.specialties.includes(selectedService.id)
+
+            if (isAssigned && !hasSpecialty) {
+                return { ...emp, specialties: [...emp.specialties, selectedService.id] }
+            } else if (!isAssigned && hasSpecialty) {
+                return { ...emp, specialties: emp.specialties.filter(id => id !== selectedService.id) }
+            }
+            return emp
+        })
+        setEmployees(updatedEmployees)
+
         setShowEditService(false)
         resetForm()
     }
@@ -110,19 +140,23 @@ export default function ServicosPage() {
 
     const openEditDialog = (service: Service) => {
         setSelectedService(service)
+        // Find which professionals are currently linked via their specialties
+        const linkedProfessionalIds = employees
+            .filter(emp => emp.specialties.includes(service.id))
+            .map(emp => emp.id)
+
         setFormData({
             name: service.name,
             category: service.category,
             duration: service.duration,
             price: service.price,
             description: service.description,
+            allowOnlineBooking: service.allowOnlineBooking,
             requiresDeposit: service.requiresDeposit,
             depositAmount: service.depositAmount,
-            allowOnlineBooking: service.allowOnlineBooking,
             bufferBefore: service.bufferBefore,
             bufferAfter: service.bufferAfter,
-            maxClientsPerSlot: service.maxClientsPerSlot,
-            requiredStaff: service.requiredStaff
+            professionalIds: linkedProfessionalIds
         })
         setShowEditService(true)
     }
@@ -144,10 +178,18 @@ export default function ServicosPage() {
             allowOnlineBooking: true,
             bufferBefore: 5,
             bufferAfter: 10,
-            maxClientsPerSlot: 1,
-            requiredStaff: 1
+            professionalIds: []
         })
         setSelectedService(null)
+    }
+
+    const toggleProfessional = (empId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            professionalIds: prev.professionalIds.includes(empId)
+                ? prev.professionalIds.filter(id => id !== empId)
+                : [...prev.professionalIds, empId]
+        }))
     }
 
     return (
@@ -447,7 +489,10 @@ export default function ServicosPage() {
                                     <p className="text-sm font-bold">Exigir Sinal (Pagamento Prévio)</p>
                                     <p className="text-[10px] text-slate-400">Garante a reserva com valor antecipado</p>
                                 </div>
-                                <Switch checked={formData.requiresDeposit} onCheckedChange={(val) => setFormData({ ...formData, requiresDeposit: val })} />
+                                <Switch
+                                    checked={formData.requiresDeposit}
+                                    onCheckedChange={(checked) => setFormData({ ...formData, requiresDeposit: !!checked })}
+                                />
                             </div>
                             {formData.requiresDeposit && (
                                 <div className="p-4 border-2 border-primary/20 rounded-2xl space-y-2">
@@ -460,6 +505,25 @@ export default function ServicosPage() {
                                     />
                                 </div>
                             )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-zinc-800">
+                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Profissionais Vinculados</h4>
+                        <p className="text-[10px] text-slate-400 -mt-2">Selecione quem realiza este serviço. Isso afetará a disponibilidade no agendamento online.</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            {employees.filter(e => e.tenantId === currentTenant.id).map(emp => (
+                                <div key={emp.id} className="flex items-center space-x-2 p-3 bg-slate-50 dark:bg-zinc-800 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors">
+                                    <Checkbox
+                                        id={`emp-${emp.id}`}
+                                        checked={formData.professionalIds.includes(emp.id)}
+                                        onCheckedChange={() => toggleProfessional(emp.id)}
+                                    />
+                                    <label htmlFor={`emp-${emp.id}`} className="text-sm font-medium leading-none cursor-pointer">
+                                        {emp.name}
+                                    </label>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
