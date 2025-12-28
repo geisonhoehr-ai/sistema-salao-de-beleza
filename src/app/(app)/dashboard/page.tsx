@@ -58,7 +58,7 @@ export default function DashboardPage() {
                         <CardTitle className="text-lg font-semibold">Receita Semanal</CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
-                        <div className="h-[300px]">
+                        <div className="h-[300px] w-full min-h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={chartData}>
                                     <defs>

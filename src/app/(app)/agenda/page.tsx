@@ -290,7 +290,17 @@ export default function AgendaPage() {
                                                                         <div>
                                                                             <div className="flex items-center justify-between gap-2 mb-1">
                                                                                 <span className="text-[11px] font-bold tracking-tight opacity-70">
-                                                                                    {apt.time} - {format(addDays(parseISO(`${apt.date}T${apt.time}`), 0), 'HH:mm', { locale: ptBR })}
+                                                                                    {apt.time} - {(() => {
+                                                                                        try {
+                                                                                            const [h, m] = apt.time.split(':').map(Number);
+                                                                                            const start = parseISO(apt.date);
+                                                                                            start.setHours(h, m, 0, 0);
+                                                                                            const end = new Date(start.getTime() + (apt.duration * 60000));
+                                                                                            return format(end, 'HH:mm');
+                                                                                        } catch (e) {
+                                                                                            return '--:--';
+                                                                                        }
+                                                                                    })()}
                                                                                 </span>
                                                                                 <Badge variant="outline" className="h-5 text-[9px] font-bold uppercase tracking-tighter border-black/10 dark:border-white/10 bg-white/20">
                                                                                     {apt.duration}m
