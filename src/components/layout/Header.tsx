@@ -3,6 +3,8 @@
 import { Bell, ChevronDown, Check } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useTenant } from "@/contexts/tenant-context"
+import { useAuth } from "@/contexts/auth-context"
+import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
@@ -17,6 +19,7 @@ export function Header() {
     const pageTitle = pathSegments[0]?.charAt(0).toUpperCase() + pathSegments[0]?.slice(1) || "Dashboard"
 
     const { currentTenant, setCurrentTenant, allTenants } = useTenant()
+    const { isSuperAdmin } = useAuth()
     const [isTenantMenuOpen, setIsTenantMenuOpen] = useState(false)
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
     const [notifications, setNotifications] = useState(initialNotifications)
@@ -52,14 +55,24 @@ export function Header() {
                 {/* Tenant Dropdown */}
                 <div className="relative">
                     <button
-                        onClick={() => setIsTenantMenuOpen(!isTenantMenuOpen)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all duration-200 group"
+                        onClick={() => isSuperAdmin && setIsTenantMenuOpen(!isTenantMenuOpen)}
+                        className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 group",
+                            isSuperAdmin
+                                ? "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer"
+                                : "bg-transparent cursor-default px-0"
+                        )}
                     >
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-[10px] font-bold">
                             {currentTenant.name.substring(0, 2).toUpperCase()}
                         </div>
                         <span className="text-sm font-medium text-foreground/70">{currentTenant.name}</span>
-                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isTenantMenuOpen ? 'rotate-180' : ''}`} />
+                        {isSuperAdmin && (
+                            <ChevronDown className={cn(
+                                "w-4 h-4 text-muted-foreground transition-transform duration-200",
+                                isTenantMenuOpen && "rotate-180"
+                            )} />
+                        )}
                     </button>
 
                     {/* Dropdown Menu */}
