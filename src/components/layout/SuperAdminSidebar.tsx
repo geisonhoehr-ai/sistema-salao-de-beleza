@@ -14,7 +14,8 @@ import {
     DollarSign,
     Megaphone,
     Smartphone,
-    Scissors
+    Scissors,
+    LifeBuoy
 } from "lucide-react"
 
 const superAdminMenuItems = [
@@ -22,6 +23,7 @@ const superAdminMenuItems = [
     { icon: Building2, label: "Empresas", href: "/super-admin/empresas" },
     { icon: Package, label: "Planos", href: "/super-admin/planos" },
     { icon: CreditCard, label: "SA Financeiro", href: "/super-admin/financeiro" },
+    { icon: LifeBuoy, label: "Suporte", href: "/super-admin/suporte" },
     { icon: Settings, label: "SA Configs", href: "/super-admin/configuracoes" },
 ]
 
