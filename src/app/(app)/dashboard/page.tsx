@@ -88,20 +88,20 @@ export default function DashboardPage() {
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">Dashboard</h2>
-                    <p className="text-slate-500 dark:text-zinc-400 font-medium">Insights e performance da {currentTenant.name}.</p>
+                    <h2 className="text-5xl font-black tracking-tight text-gray-900 dark:text-white">Dashboard</h2>
+                    <p className="text-gray-600 dark:text-zinc-400 font-medium mt-1">Insights e performance da {currentTenant.name}.</p>
                 </div>
 
-                <Card className="flex items-center gap-4 px-6 py-3 bg-white dark:bg-zinc-900 border-none shadow-xl rounded-2xl relative overflow-hidden group border border-slate-100 dark:border-zinc-800">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-16 translate-x-16 group-hover:scale-110 transition-transform" />
-                    <div className="flex-1 min-w-0 pr-4">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Link de Agendamento</p>
-                        <p className="text-sm font-bold truncate text-primary">{bookingUrl}</p>
+                <Card className="flex items-center gap-4 px-6 py-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-gray-100 dark:border-zinc-800 shadow-lg rounded-2xl relative overflow-hidden group hover:shadow-xl transition-all">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full -translate-y-16 translate-x-16 group-hover:scale-110 transition-transform" />
+                    <div className="flex-1 min-w-0 pr-4 relative z-10">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Link de Agendamento</p>
+                        <p className="text-sm font-bold truncate bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{bookingUrl}</p>
                     </div>
                     <Button
                         size="sm"
                         onClick={copyToClipboard}
-                        className="rounded-xl h-10 px-4 bg-slate-900 dark:bg-primary text-white font-bold shrink-0 hover:scale-105 transition-all active:scale-95"
+                        className="rounded-xl h-10 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shrink-0 hover:scale-105 transition-all active:scale-95 shadow-lg shadow-blue-500/30 relative z-10"
                     >
                         {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     </Button>
@@ -137,17 +137,17 @@ export default function DashboardPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.1 }}
                     >
-                        <Card className="p-5 rounded-3xl border-none shadow-sm bg-white dark:bg-zinc-900 group cursor-pointer hover:shadow-md transition-all border border-transparent hover:border-slate-100 dark:hover:border-zinc-800">
+                        <Card className="p-5 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900 group cursor-pointer hover:shadow-lg hover:border-gray-200 transition-all">
                             <div className="flex gap-4">
-                                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0", insight.bg)}>
+                                <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0", insight.bg)}>
                                     <insight.icon className={cn("w-6 h-6", insight.color)} />
                                 </div>
                                 <div className="space-y-1">
-                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                                    <h4 className="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-2">
                                         {insight.title}
                                         <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </h4>
-                                    <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">{insight.description}</p>
+                                    <p className="text-xs text-gray-600 dark:text-zinc-400 leading-relaxed">{insight.description}</p>
                                 </div>
                             </div>
                         </Card>
@@ -158,15 +158,15 @@ export default function DashboardPage() {
             {/* Stats Grid */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
                 {stats.map((stat, i) => (
-                    <Card key={i} className="p-6 rounded-[2rem] border-none shadow-sm bg-white dark:bg-zinc-900">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                    <Card key={i} className="p-6 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm hover:shadow-lg bg-white dark:bg-zinc-900 transition-all hover:border-gray-200">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">{stat.label}</p>
                         <div className="flex items-end justify-between">
-                            <h3 className="text-3xl font-black text-slate-900 dark:text-white">{stat.value}</h3>
+                            <h3 className="text-4xl font-black bg-gradient-to-br from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">{stat.value}</h3>
                             <div className={cn(
-                                "flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full",
-                                stat.trend.startsWith('+') ? "text-emerald-500 bg-emerald-500/10" : "text-red-500 bg-red-500/10"
+                                "flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full",
+                                stat.trend.startsWith('+') ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"
                             )}>
-                                {stat.trend.startsWith('+') ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                {stat.trend.startsWith('+') ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                                 {stat.trend}
                             </div>
                         </div>
