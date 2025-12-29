@@ -43,6 +43,7 @@ import { CustomerReviews } from "@/components/CustomerReviews"
 type Step = 'service' | 'professional' | 'datetime' | 'client_info' | 'confirmation' | 'payment' | 'success'
 
 const STEP_SEQUENCE: Step[] = ['service', 'professional', 'datetime', 'client_info', 'confirmation', 'payment']
+const SUCCESS_STEP: Step = 'success'
 
 const STEP_DETAILS: Record<Step, { label: string; description: string; icon: LucideIcon }> = {
     service: { label: "Serviço", description: "Escolha o cuidado", icon: Sparkles },
@@ -110,6 +111,8 @@ export default function BookingPage() {
     const [selectedDate, setSelectedDate] = useState<Date>(startOfToday())
     const [selectedTime, setSelectedTime] = useState<string | null>(null)
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'pix' | 'card' | 'local' | null>(null)
+    const showSummary = step === 'confirmation' || step === SUCCESS_STEP
+    const tenantPhone = tenant.whatsapp ? `+${tenant.whatsapp}` : null
 
     const voucherCode = useMemo(() => {
         if (!selectedService) {
@@ -454,7 +457,7 @@ export default function BookingPage() {
                 <div className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                     {STEP_SEQUENCE.map((flowStep, index) => {
                         const Icon = STEP_DETAILS[flowStep].icon
-                        const currentIndex = step === 'success' ? STEP_SEQUENCE.length : Math.max(STEP_SEQUENCE.indexOf(step), 0)
+                        const currentIndex = step === SUCCESS_STEP ? STEP_SEQUENCE.length : Math.max(STEP_SEQUENCE.indexOf(step), 0)
                         const isCompleted = index < currentIndex
                         const isCurrent = step === flowStep
                         return (
@@ -1005,7 +1008,9 @@ export default function BookingPage() {
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Profissional</p>
                                     <p className="text-sm font-semibold text-slate-900 dark:text-white">{selectedEmployee?.name}</p>
-                                    <p className="text-xs text-slate-500">{selectedEmployee?.specialty}</p>
+                                    <p className="text-xs text-slate-500">
+                                        {selectedEmployee?.specialties?.join(", ") || "Especialidades variadas"}
+                                    </p>
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data</p>
@@ -1023,12 +1028,16 @@ export default function BookingPage() {
                             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Ajuda & suporte</p>
                             <p className="text-sm text-slate-500 dark:text-zinc-400">Precisa ajustar algo? Fale com a equipe em segundos.</p>
                             <div className="flex flex-col gap-2">
-                                <Button variant="outline" className="rounded-2xl w-full" onClick={handleWhatsAppContact}>
-                                    WhatsApp {tenant.whatsapp?.substring(2)}
-                                </Button>
-                                <Button variant="ghost" className="rounded-2xl w-full text-slate-500" onClick={() => window.open(`tel:${tenant.phone}`, '_blank')}>
-                                    Ligar para {tenant.phone}
-                                </Button>
+                                {tenant.whatsapp && (
+                                    <Button variant="outline" className="rounded-2xl w-full" onClick={handleWhatsAppContact}>
+                                        WhatsApp {tenant.whatsapp.substring(2)}
+                                    </Button>
+                                )}
+                                {tenantPhone && (
+                                    <Button variant="ghost" className="rounded-2xl w-full text-slate-500" onClick={() => window.open(`tel:${tenantPhone}`, '_blank')}>
+                                        Ligar para {tenantPhone}
+                                    </Button>
+                                )}
                             </div>
                         </Card>
                     </div>
