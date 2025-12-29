@@ -6,19 +6,27 @@ import { motion, AnimatePresence } from "framer-motion"
 import { format, addDays, isSameDay, startOfToday, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import {
+    ArrowRight,
+    Calendar as CalendarIcon,
+    CheckCircle2,
     ChevronLeft,
     ChevronRight,
     Clock,
-    Calendar as CalendarIcon,
-    CheckCircle2,
-    Sparkles,
-    User,
-    ArrowRight,
+    CreditCard,
     MapPin,
     Phone,
     ShieldCheck,
-    ShoppingBag
+    ShoppingBag,
+    Smartphone,
+    Sparkles,
+    Star,
+    Gift,
+    MessageCircle,
+    User,
+    Users as UsersIcon,
+    Wallet
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -26,12 +34,53 @@ import { tenants } from "@/mocks/tenants"
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp"
 import { services, employees } from "@/mocks/services"
 import { appointments } from "@/mocks/data"
-import { mockCustomers, type Customer } from "@/mocks/customers"
-import { cn } from "@/lib/utils"
+import { mockCustomers } from "@/mocks/customers"
+import { combos } from "@/mocks/combos"
+import { cn, getInitials } from "@/lib/utils"
 import { CustomerTrustBar } from "@/components/CustomerTrustBar"
 import { CustomerReviews } from "@/components/CustomerReviews"
 
 type Step = 'service' | 'professional' | 'datetime' | 'client_info' | 'confirmation' | 'payment' | 'success'
+
+const STEP_SEQUENCE: Step[] = ['service', 'professional', 'datetime', 'client_info', 'confirmation', 'payment']
+
+const STEP_DETAILS: Record<Step, { label: string; description: string; icon: LucideIcon }> = {
+    service: { label: "Serviço", description: "Escolha o cuidado", icon: Sparkles },
+    professional: { label: "Profissional", description: "Preferências", icon: UsersIcon },
+    datetime: { label: "Data & hora", description: "Disponibilidade", icon: Clock },
+    client_info: { label: "Seus dados", description: "Identifique-se", icon: ShieldCheck },
+    confirmation: { label: "Confirmação", description: "Revise tudo", icon: CheckCircle2 },
+    payment: { label: "Pagamento", description: "Finalize em segurança", icon: CreditCard },
+    success: { label: "Concluído", description: "Tudo pronto", icon: CheckCircle2 },
+}
+
+const weekDayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
+
+type PaymentMethod = {
+    id: 'pix' | 'card' | 'local'
+    label: string
+    icon: LucideIcon
+    description: string
+}
+
+const PAYMENT_METHODS: PaymentMethod[] = [
+    { id: 'pix', label: 'Pix (5% de Desconto)', icon: Smartphone, description: 'Liberação imediata' },
+    { id: 'card', label: 'Cartão de Crédito', icon: CreditCard, description: 'Até 3x sem juros' },
+    { id: 'local', label: 'Pagar no Local', icon: Wallet, description: 'Pague ao finalizar o serviço' },
+]
+
+const trustHighlights = [
+    { title: "Padrão BeautyFlow", description: "Equipe selecionada, avaliação 4.9/5", icon: Star },
+    { title: "Confirmação imediata", description: "Whatsapp + e-mail com todos os detalhes", icon: MessageCircle },
+    { title: "Presentes especiais", description: "Cupons exclusivos após o agendamento", icon: Gift },
+]
+
+const normalizeCpf = (value: string) => value.replace(/\D/g, "")
+
+const findCustomerByCpf = (cpf: string) => mockCustomers.find((customer) => normalizeCpf(customer.cpf) === cpf)
+
+const findCustomerByEmail = (email: string) =>
+    mockCustomers.find((customer) => customer.email.toLowerCase() === email.toLowerCase())
 
 export default function BookingPage() {
     const params = useParams()
@@ -43,12 +92,33 @@ export default function BookingPage() {
         return tenants.find(t => t.slug === tenantSlug) || tenants[0]
     }, [tenantSlug])
 
+    const tenantInitials = useMemo(() => getInitials(tenant.fullName || tenant.name), [tenant.fullName, tenant.name])
+    const tenantBadge = tenant.logo || tenantInitials || "BF"
+
+    const whatsappUrl = useMemo(() => {
+        const message = encodeURIComponent(`Olá, gostaria de agendar com ${tenant.fullName}!`)
+        return `https://wa.me/${tenant.whatsapp}?text=${message}`
+    }, [tenant.fullName, tenant.whatsapp])
+
+    const handleWhatsAppContact = () => {
+        window.open(whatsappUrl, "_blank")
+    }
+
     const [step, setStep] = useState<Step>('service')
     const [selectedService, setSelectedService] = useState<typeof services[0] | null>(null)
     const [selectedEmployee, setSelectedEmployee] = useState<typeof employees[0] | null>(null)
     const [selectedDate, setSelectedDate] = useState<Date>(startOfToday())
     const [selectedTime, setSelectedTime] = useState<string | null>(null)
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'pix' | 'card' | 'local' | null>(null)
+
+    const voucherCode = useMemo(() => {
+        if (!selectedService) {
+            return "BF0000"
+        }
+        const datePart = format(selectedDate, "ddMM")
+        const servicePart = selectedService.id.toString().padStart(2, '0').slice(-2)
+        return `BF${datePart}${servicePart}`
+    }, [selectedDate, selectedService])
 
     // Up-sell Logic: Find a service for the next slot
     const upsellService = useMemo(() => {
@@ -87,15 +157,18 @@ export default function BookingPage() {
         isExisting: false
     })
 
+    const isCpfReady = normalizeCpf(clientData.cpf).length === 11
+
     const tenantServices = services.filter(s => s.tenantId === tenant.id)
     const tenantEmployees = employees.filter(e => e.tenantId === tenant.id)
+    const suggestedCombos = useMemo(() => combos.filter(combo => combo.tenantId === tenant.id).slice(0, 2), [tenant.id])
 
     // Dynamic Slot Generation
     const timeSlots = useMemo(() => {
         if (!selectedService || !selectedEmployee || !selectedDate) return []
 
         const slots: string[] = []
-        const dayOfWeek = format(selectedDate, 'eeee', { locale: ptBR }).toLowerCase()
+        const dayOfWeek = weekDayKeys[selectedDate.getDay()]
         const employeeSchedule = selectedEmployee.workingHours[dayOfWeek]
 
         if (!employeeSchedule || employeeSchedule.length === 0) return []
@@ -154,14 +227,21 @@ export default function BookingPage() {
         return slots
     }, [selectedService, selectedEmployee, selectedDate, tenant.id, tenant.schedulingType])
 
+    const activeTime = selectedTime ?? (timeSlots[0] ?? null)
+
     const handleNext = () => {
         if (step === 'service' && selectedService) setStep('professional')
         else if (step === 'professional' && selectedEmployee) setStep('datetime')
-        else if (step === 'datetime' && selectedDate && selectedTime) setStep('client_info')
+        else if (step === 'datetime' && selectedDate && activeTime) {
+            if (!selectedTime && activeTime) {
+                setSelectedTime(activeTime)
+            }
+            setStep('client_info')
+        }
         else if (step === 'client_info') {
-            if (!clientData.cpf) return;
+            if (!isCpfReady) return;
             if (clientData.isExisting && !clientData.password) return;
-            if (!clientData.isExisting && (!clientData.name || !clientData.email || !clientData.password)) return;
+            if (!clientData.isExisting && (!clientData.name || !clientData.email || !clientData.phone || !clientData.password)) return;
             setStep('confirmation')
         }
         else if (step === 'confirmation') setStep('payment')
@@ -203,8 +283,8 @@ export default function BookingPage() {
                     <Card className="p-6 rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 overflow-hidden relative">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -translate-y-12 translate-x-12" />
                         <div className="relative z-10 flex flex-col items-center gap-4 text-center">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-2xl">
-                                {tenant.logo}
+                        <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-lg font-black text-primary">
+                            {tenantBadge}
                             </div>
                             <div className="space-y-1">
                                 <h3 className="font-bold text-slate-900 dark:text-white">{selectedService?.name}</h3>
@@ -214,7 +294,7 @@ export default function BookingPage() {
                             </div>
                             <div className="space-y-2">
                                 <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] bg-primary/5 px-4 py-2 rounded-full border border-primary/10">
-                                    Voucher: #BF{Math.floor(Math.random() * 9000) + 1000}
+                                    Voucher: #{voucherCode}
                                 </span>
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Apresente este código na recepção.</p>
                             </div>
@@ -257,6 +337,37 @@ export default function BookingPage() {
                         </motion.div>
                     )}
 
+                    {suggestedCombos.length > 0 && (
+                        <div className="space-y-3 w-full">
+                            <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-slate-400">Complete sua experiência</h3>
+                            <div className="grid gap-3">
+                                {suggestedCombos.map(combo => (
+                                    <Card key={combo.id} className="p-4 rounded-2xl border border-slate-100 dark:border-zinc-800 text-left flex flex-col gap-3">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-bold text-slate-900 dark:text-white">{combo.name}</p>
+                                                <p className="text-xs text-slate-500">{combo.description}</p>
+                                            </div>
+                                            <Badge variant="secondary" className="rounded-full text-[10px] uppercase tracking-widest">
+                                                R$ {combo.price}
+                                            </Badge>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1">
+                                            {combo.items.map(item => (
+                                                <Badge key={item} variant="outline" className="text-[10px] rounded-full">
+                                                    {item}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                        <Button className="rounded-xl w-full" variant="outline">
+                                            Reservar combo
+                                        </Button>
+                                    </Card>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex flex-col sm:flex-row gap-3">
                         <Button
                             onClick={() => router.push(`/${tenantSlug}/profile?email=${clientData.email}`)}
@@ -285,7 +396,7 @@ export default function BookingPage() {
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-xl shadow-lg shadow-primary/20">
-                            {tenant.logo}
+                            {tenantBadge}
                         </div>
                         <div>
                             <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">{tenant.fullName}</h1>
@@ -305,7 +416,12 @@ export default function BookingPage() {
                             <ShoppingBag className="w-4 h-4" />
                             Loja
                         </Button>
-                        <Button variant="outline" size="icon" className="rounded-full border-slate-200 dark:border-zinc-800">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="rounded-full border-slate-200 dark:border-zinc-800"
+                            onClick={handleWhatsAppContact}
+                        >
                             <Phone className="w-4 h-4" />
                         </Button>
                     </div>
@@ -315,20 +431,67 @@ export default function BookingPage() {
             <main className="max-w-4xl mx-auto p-6 pb-32 space-y-8">
                 <CustomerTrustBar tenant={tenant} />
                 <CustomerReviews tenantName={tenant.fullName} />
-                {/* Progress Bar */}
-                <div className="mb-10 flex gap-2">
-                    {['service', 'professional', 'datetime', 'client_info', 'confirmation'].map((s, idx) => (
-                        <div
-                            key={s}
-                            className={cn(
-                                "h-1.5 flex-1 rounded-full transition-all duration-500",
-                                step === s ? "bg-primary w-3" :
-                                    ['service', 'professional', 'datetime', 'client_info', 'confirmation'].indexOf(step) > idx
-                                        ? "bg-primary/40"
-                                        : "bg-slate-200 dark:bg-zinc-800"
-                            )}
-                        />
-                    ))}
+                <Card className="p-5 sm:p-6 rounded-[2rem] border-none bg-gradient-to-br from-primary/5 via-white to-slate-50 dark:from-primary/20 dark:via-zinc-900 dark:to-zinc-900 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                            <Phone className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/70">Precisa de ajuda?</p>
+                            <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-tight">
+                                Concierge BeautyFlow disponível para você
+                            </p>
+                            <p className="text-sm text-slate-500 dark:text-zinc-400">
+                                Resposta média em menos de 3 minutos via WhatsApp.
+                            </p>
+                        </div>
+                    </div>
+                    <Button className="rounded-2xl h-12 font-bold" onClick={handleWhatsAppContact}>
+                        Falar pelo WhatsApp
+                    </Button>
+                </Card>
+                {/* Progress Tracker */}
+                <div className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                    {STEP_SEQUENCE.map((flowStep, index) => {
+                        const Icon = STEP_DETAILS[flowStep].icon
+                        const currentIndex = step === 'success' ? STEP_SEQUENCE.length : Math.max(STEP_SEQUENCE.indexOf(step), 0)
+                        const isCompleted = index < currentIndex
+                        const isCurrent = step === flowStep
+                        return (
+                            <div
+                                key={flowStep}
+                                className={cn(
+                                    "rounded-2xl border bg-white/80 dark:bg-zinc-900/70 p-4 transition-all",
+                                    isCompleted && "border-primary/40 shadow-lg shadow-primary/10",
+                                    isCurrent && "ring-2 ring-primary/40",
+                                    !isCompleted && !isCurrent && "border-slate-100 dark:border-zinc-800"
+                                )}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div
+                                        className={cn(
+                                            "w-10 h-10 rounded-xl flex items-center justify-center border",
+                                            isCompleted
+                                                ? "bg-primary text-white border-primary"
+                                                : isCurrent
+                                                    ? "bg-primary/10 text-primary border-primary/20"
+                                                    : "bg-white text-slate-400 border-slate-200 dark:bg-zinc-900 dark:border-zinc-800"
+                                        )}
+                                    >
+                                        <Icon className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-zinc-400">
+                                            {STEP_DETAILS[flowStep].label}
+                                        </p>
+                                        <p className="text-[11px] text-slate-400 dark:text-zinc-500">
+                                            {STEP_DETAILS[flowStep].description}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    })}
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -401,7 +564,10 @@ export default function BookingPage() {
                                 {tenantEmployees.map(emp => (
                                     <Card
                                         key={emp.id}
-                                        onClick={() => setSelectedEmployee(emp)}
+                                        onClick={() => {
+                                            setSelectedEmployee(emp)
+                                            setSelectedTime(null)
+                                        }}
                                         className={cn(
                                             "p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer text-center space-y-4 group active:scale-[0.98]",
                                             selectedEmployee?.id === emp.id
@@ -453,7 +619,10 @@ export default function BookingPage() {
                                         return (
                                             <div
                                                 key={i}
-                                                onClick={() => setSelectedDate(date)}
+                                                onClick={() => {
+                                                    setSelectedDate(date)
+                                                    setSelectedTime(null)
+                                                }}
                                                 className={cn(
                                                     "flex flex-col items-center justify-center min-w-[72px] h-24 rounded-3xl border-2 transition-all cursor-pointer",
                                                     isSelected
@@ -473,23 +642,29 @@ export default function BookingPage() {
                                 {/* Time Grid */}
                                 <div className="space-y-4">
                                     <h4 className="text-sm font-bold uppercase tracking-widest text-slate-400">Horários disponíveis</h4>
-                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                    {timeSlots.length === 0 ? (
+                                        <div className="rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 p-6 text-center text-sm text-slate-500 dark:text-zinc-400">
+                                            Nenhum horário disponível neste dia. Escolha outra data ou profissional.
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                                         {timeSlots.map(time => (
-                                            <Button
-                                                key={time}
-                                                variant={selectedTime === time ? "default" : "outline"}
-                                                onClick={() => setSelectedTime(time)}
-                                                className={cn(
-                                                    "h-14 rounded-2xl font-bold transition-all",
-                                                    selectedTime === time
-                                                        ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.05]"
-                                                        : "bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white hover:bg-slate-50"
-                                                )}
-                                            >
-                                                {time}
-                                            </Button>
-                                        ))}
-                                    </div>
+                                                <Button
+                                                    key={time}
+                                                variant={activeTime === time ? "default" : "outline"}
+                                                    onClick={() => setSelectedTime(time)}
+                                                    className={cn(
+                                                        "h-14 rounded-2xl font-bold transition-all",
+                                                    activeTime === time
+                                                            ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.05]"
+                                                            : "bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white hover:bg-slate-50"
+                                                    )}
+                                                >
+                                                    {time}
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </motion.div>
@@ -525,15 +700,36 @@ export default function BookingPage() {
                                             placeholder="000.000.000-00"
                                             value={clientData.cpf}
                                             onChange={(e) => {
-                                                const val = e.target.value;
-                                                const existing = mockCustomers.find(c => c.cpf === val);
-                                                setClientData({
-                                                    ...clientData,
-                                                    cpf: val,
-                                                    isExisting: !!existing,
-                                                    name: existing?.name || "",
-                                                    email: existing?.email || ""
-                                                });
+                                                const val = e.target.value
+                                                const normalized = normalizeCpf(val)
+                                                const existing = normalized.length === 11 ? findCustomerByCpf(normalized) : undefined
+                                                setClientData((prev) => {
+                                                    if (existing) {
+                                                        return {
+                                                            ...prev,
+                                                            cpf: val,
+                                                            isExisting: true,
+                                                            name: existing.name,
+                                                            email: existing.email,
+                                                            phone: existing.phone || prev.phone,
+                                                            password: ""
+                                                        }
+                                                    }
+
+                                                    if (normalized.length === 11) {
+                                                        return {
+                                                            ...prev,
+                                                            cpf: val,
+                                                            isExisting: false,
+                                                            name: "",
+                                                            email: "",
+                                                            phone: "",
+                                                            password: ""
+                                                        }
+                                                    }
+
+                                                    return { ...prev, cpf: val, isExisting: false }
+                                                })
                                             }}
                                             className="w-full h-16 pl-12 pr-4 rounded-2xl border-2 border-transparent bg-white dark:bg-zinc-900 shadow-sm focus:border-primary focus:ring-0 transition-all font-medium text-slate-900 dark:text-white"
                                         />
@@ -541,7 +737,7 @@ export default function BookingPage() {
                                 </div>
 
                                 <AnimatePresence mode="wait">
-                                    {clientData.cpf.length >= 11 && (
+                                    {isCpfReady && (
                                         <motion.div
                                             initial={{ opacity: 0, height: 0 }}
                                             animate={{ opacity: 1, height: 'auto' }}
@@ -585,7 +781,34 @@ export default function BookingPage() {
                                                             type="email"
                                                             placeholder="seu@email.com"
                                                             value={clientData.email}
-                                                            onChange={(e) => setClientData({ ...clientData, email: e.target.value })}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value
+                                                                const existing = findCustomerByEmail(val)
+                                                                setClientData((prev) => {
+                                                                    if (existing) {
+                                                                        return {
+                                                                            ...prev,
+                                                                            email: val,
+                                                                            isExisting: true,
+                                                                            name: existing.name,
+                                                                            cpf: existing.cpf,
+                                                                            phone: existing.phone || prev.phone,
+                                                                            password: ""
+                                                                        }
+                                                                    }
+                                                                    return { ...prev, email: val }
+                                                                })
+                                                            }}
+                                                            className="w-full h-16 px-6 rounded-2xl border-2 border-transparent bg-white dark:bg-zinc-900 shadow-sm focus:border-primary focus:ring-0 transition-all font-medium text-slate-900 dark:text-white"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">WhatsApp</label>
+                                                        <input
+                                                            type="tel"
+                                                            placeholder="(11) 99999-0000"
+                                                            value={clientData.phone}
+                                                            onChange={(e) => setClientData({ ...clientData, phone: e.target.value })}
                                                             className="w-full h-16 px-6 rounded-2xl border-2 border-transparent bg-white dark:bg-zinc-900 shadow-sm focus:border-primary focus:ring-0 transition-all font-medium text-slate-900 dark:text-white"
                                                         />
                                                     </div>
@@ -705,39 +928,38 @@ export default function BookingPage() {
                                 <p className="text-slate-500 dark:text-zinc-400">Como você prefere pagar pelo serviço?</p>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-4">
-                                {[
-                                    { id: 'pix', label: 'Pix (5% de Desconto)', icon: '💠', description: 'Liberação imediata' },
-                                    { id: 'card', label: 'Cartão de Crédito', icon: '💳', description: 'Até 3x sem juros' },
-                                    { id: 'local', label: 'Pagar no Local', icon: '🤝', description: 'Pague ao finalizar o serviço' },
-                                ].map((method) => (
-                                    <Card
-                                        key={method.id}
-                                        onClick={() => setSelectedPaymentMethod(method.id as any)}
-                                        className={cn(
-                                            "p-6 rounded-[2rem] border-2 transition-all cursor-pointer flex items-center justify-between group active:scale-[0.98]",
-                                            selectedPaymentMethod === method.id
-                                                ? "border-primary bg-primary/[0.03] shadow-lg shadow-primary/5"
-                                                : "border-transparent bg-white dark:bg-zinc-900 hover:border-slate-200 dark:hover:border-zinc-800 shadow-sm"
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
-                                                {method.icon}
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-slate-900 dark:text-white leading-tight">{method.label}</h4>
-                                                <p className="text-xs text-slate-500 dark:text-zinc-400">{method.description}</p>
-                                            </div>
-                                        </div>
-                                        <div className={cn(
-                                            "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-                                            selectedPaymentMethod === method.id ? "border-primary bg-primary" : "border-slate-200"
-                                        )}>
-                                            {selectedPaymentMethod === method.id && <div className="w-2 h-2 bg-white rounded-full" />}
-                                        </div>
-                                    </Card>
-                                ))}
+                       <div className="grid grid-cols-1 gap-4">
+                        {PAYMENT_METHODS.map((method) => (
+                            <Card
+                                key={method.id}
+                                onClick={() => setSelectedPaymentMethod(method.id)}
+                                className={cn(
+                                    "p-6 rounded-[2rem] border-2 transition-all cursor-pointer flex items-center justify-between group active:scale-[0.98]",
+                                    selectedPaymentMethod === method.id
+                                        ? "border-primary bg-primary/[0.03] shadow-lg shadow-primary/5"
+                                        : "border-transparent bg-white dark:bg-zinc-900 hover:border-slate-200 dark:hover:border-zinc-800 shadow-sm"
+                                )}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center group-hover:scale-110 transition-transform text-slate-400">
+                                        <method.icon className={cn(
+                                            "w-6 h-6",
+                                            selectedPaymentMethod === method.id ? "text-primary" : "text-slate-400"
+                                        )} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-slate-900 dark:text-white leading-tight">{method.label}</h4>
+                                        <p className="text-xs text-slate-500 dark:text-zinc-400">{method.description}</p>
+                                    </div>
+                                </div>
+                                <div className={cn(
+                                    "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                    selectedPaymentMethod === method.id ? "border-primary bg-primary" : "border-slate-200"
+                                )}>
+                                    {selectedPaymentMethod === method.id && <div className="w-2 h-2 bg-white rounded-full" />}
+                                </div>
+                            </Card>
+                        ))}
                             </div>
 
                             {selectedPaymentMethod === 'pix' && (
@@ -761,15 +983,102 @@ export default function BookingPage() {
                 </AnimatePresence>
             </main>
 
+            {showSummary && (
+                <section className="max-w-4xl mx-auto px-6 pb-8 space-y-4">
+                    <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
+                        <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-5">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Resumo</p>
+                                    <h3 className="text-xl font-black text-slate-900 dark:text-white">Quase tudo pronto!</h3>
+                                </div>
+                                <Badge variant="outline" className="rounded-full text-[10px] uppercase tracking-widest">
+                                    {STEP_DETAILS[step].label}
+                                </Badge>
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Serviço</p>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{selectedService?.name}</p>
+                                    <p className="text-xs text-slate-500">{selectedService?.duration} min • R$ {selectedService?.price}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Profissional</p>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{selectedEmployee?.name}</p>
+                                    <p className="text-xs text-slate-500">{selectedEmployee?.specialty}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data</p>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                                        {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                                    </p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Horário</p>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{activeTime}</p>
+                                </div>
+                            </div>
+                        </Card>
+                        <Card className="rounded-[2.5rem] border-none shadow-lg bg-white dark:bg-zinc-900 p-5 space-y-3">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Ajuda & suporte</p>
+                            <p className="text-sm text-slate-500 dark:text-zinc-400">Precisa ajustar algo? Fale com a equipe em segundos.</p>
+                            <div className="flex flex-col gap-2">
+                                <Button variant="outline" className="rounded-2xl w-full" onClick={handleWhatsAppContact}>
+                                    WhatsApp {tenant.whatsapp?.substring(2)}
+                                </Button>
+                                <Button variant="ghost" className="rounded-2xl w-full text-slate-500" onClick={() => window.open(`tel:${tenant.phone}`, '_blank')}>
+                                    Ligar para {tenant.phone}
+                                </Button>
+                            </div>
+                        </Card>
+                    </div>
+                </section>
+            )}
+
+            {/* Confidence Highlights */}
+            <section className="max-w-4xl mx-auto px-6 pb-32 space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-slate-400 text-center">Por que reservar com a gente</h3>
+                <div className="grid gap-3 md:grid-cols-3">
+                    {trustHighlights.map(item => {
+                        const Icon = item.icon
+                        return (
+                            <div key={item.title} className="p-4 rounded-2xl border border-slate-100 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/70 flex items-start gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                    <Icon className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white">{item.title}</p>
+                                    <p className="text-xs text-slate-500">{item.description}</p>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+            </section>
+
             {/* Custom Bottom Navigation Bar */}
             <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent dark:from-zinc-950 dark:via-zinc-950 z-50">
-                <div className="max-w-4xl mx-auto">
+                <div className="max-w-4xl mx-auto flex flex-col gap-3">
+                    <div className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.3em] text-slate-400">
+                        <span>{STEP_DETAILS[step].label}</span>
+                        {selectedService && (
+                            <span className="text-primary flex items-center gap-1">
+                                <Sparkles className="w-3 h-3" />
+                                Voucher {voucherCode}
+                            </span>
+                        )}
+                    </div>
                     <Button
                         disabled={
                             (step === 'service' && !selectedService) ||
                             (step === 'professional' && !selectedEmployee) ||
-                            (step === 'datetime' && (!selectedDate || !selectedTime)) ||
-                            (step === 'client_info' && (!clientData.name || !clientData.email)) ||
+                            (step === 'datetime' && (!selectedDate || !activeTime)) ||
+                            (step === 'client_info' && (
+                                !isCpfReady ||
+                                (clientData.isExisting
+                                    ? !clientData.password
+                                    : (!clientData.name || !clientData.email || !clientData.phone || !clientData.password))
+                            )) ||
                             (step === 'payment' && !selectedPaymentMethod)
                         }
                         onClick={step === 'payment' ? () => setStep('success') : handleNext}

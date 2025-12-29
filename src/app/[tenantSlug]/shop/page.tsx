@@ -15,44 +15,96 @@ import {
     CheckCircle2,
     ShoppingBag,
     Star,
-    Info
+    Info,
+    Shield,
+    Gift,
+    Truck
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { tenants } from "@/mocks/tenants"
-import { inventory, type Product } from "@/mocks/inventory"
-import { cn } from "@/lib/utils"
+import { cn, getInitials } from "@/lib/utils"
 import { CustomerTrustBar } from "@/components/CustomerTrustBar"
 import { CustomerReviews } from "@/components/CustomerReviews"
-import { combos } from "@/mocks/combos"
+import { useTenantBySlug, useTenantProducts, useTenantCombos } from "@/hooks/useTenantRecords"
+
+interface ComboPerk {
+    id: string
+    title: string
+    description: string
+    icon: LucideIcon
+}
+
+const comboPerks: ComboPerk[] = [
+    {
+        id: "welcome-gift",
+        title: "Brinde exclusivo",
+        description: "Mini kit de cuidados para usar em casa.",
+        icon: Gift,
+    },
+    {
+        id: "vip-checkin",
+        title: "Check-in VIP",
+        description: "Atendimento prioritário no dia do combo.",
+        icon: Shield,
+    },
+    {
+        id: "easy-transfer",
+        title: "Transporte fácil",
+        description: "Valet parceiro ou indicação de motorista.",
+        icon: Truck,
+    },
+]
 
 export default function ShopPage() {
     const params = useParams()
     const router = useRouter()
     const tenantSlug = params.tenantSlug as string
 
-    // Find tenant by slug
-    const tenant = useMemo(() => {
-        return tenants.find(t => t.slug === tenantSlug) || tenants[0]
-    }, [tenantSlug])
+    const { tenant, loading: tenantLoading } = useTenantBySlug(tenantSlug)
+    const tenantInitials = useMemo(() => getInitials(tenant?.fullName || tenant?.name || "BeautyFlow"), [tenant?.fullName, tenant?.name])
+    const tenantBadge = tenant?.logo || tenantInitials || "BF"
+    const tenantId = tenant?.id
+    const { data: products } = useTenantProducts(tenantId)
+    const { data: tenantCombos } = useTenantCombos(tenantId)
 
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedCategory, setSelectedCategory] = useState("Todos")
     const [cart, setCart] = useState<{ productId: string, quantity: number }[]>([])
     const [showCheckout, setShowCheckout] = useState(false)
     const [purchaseSuccess, setPurchaseSuccess] = useState(false)
+    const [activeCombo, setActiveCombo] = useState<string | null>(null)
 
-    const categories = ["Todos", ...Array.from(new Set(inventory.filter(p => p.tenantId === tenant.id).map(p => p.category)))]
+    const categories = useMemo(() => {
+        const unique = new Set<string>()
+        products.forEach(product => {
+            if (product.categoryName) unique.add(product.categoryName)
+        })
+        return ["Todos", ...Array.from(unique)]
+    }, [products])
 
-    const filteredProducts = inventory.filter(p =>
-        p.tenantId === tenant.id &&
-        p.showOnline &&
-        (selectedCategory === "Todos" || p.category === selectedCategory) &&
-        (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    const selectedCombo = useMemo(
+        () => tenantCombos.find(combo => combo.id === activeCombo) ?? null,
+        [tenantCombos, activeCombo]
     )
+
+    const filteredProducts = useMemo(() => (
+        products.filter(p =>
+            (selectedCategory === "Todos" || p.categoryName === selectedCategory) &&
+            (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                p.description.toLowerCase().includes(searchTerm.toLowerCase()))
+        )
+    ), [products, selectedCategory, searchTerm])
+
+    const featuredProducts = useMemo(() => products.slice(0, 3), [products])
+
+    const productMap = useMemo(() => {
+        const map = new Map<string, typeof products[number]>()
+        products.forEach(product => map.set(product.id, product))
+        return map
+    }, [products])
 
     const addToCart = (productId: string) => {
         const existing = cart.find(item => item.productId === productId)
@@ -73,9 +125,12 @@ export default function ShopPage() {
     }
 
     const cartTotal = cart.reduce((acc, item) => {
-        const product = inventory.find(p => p.id === item.productId)
+        const product = productMap.get(item.productId)
         return acc + (product?.price || 0) * item.quantity
     }, 0)
+    const formattedCartTotal = useMemo(() => cartTotal.toFixed(2), [cartTotal])
+    const pixDiscount = useMemo(() => (cartTotal * 0.05).toFixed(2), [cartTotal])
+    const totalWithPix = useMemo(() => (cartTotal * 0.95).toFixed(2), [cartTotal])
 
     const handlePurchase = () => {
         setPurchaseSuccess(true)
@@ -85,6 +140,21 @@ export default function ShopPage() {
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+    }
+
+    if (!tenant) {
+        if (tenantLoading) {
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-zinc-950">
+                    <p className="text-sm text-slate-500 dark:text-zinc-400">Carregando vitrine...</p>
+                </div>
+            )
+        }
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-zinc-950">
+                <p className="text-sm text-slate-500 dark:text-zinc-400">Salão não encontrado.</p>
+            </div>
+        )
     }
 
     if (purchaseSuccess) {
@@ -124,8 +194,8 @@ export default function ShopPage() {
                         <Button variant="ghost" size="icon" onClick={() => router.push(`/${tenantSlug}/book`)} className="rounded-full">
                             <ChevronLeft className="w-5 h-5" />
                         </Button>
-                        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white text-lg shadow-lg shadow-primary/20">
-                            {tenant.logo}
+                        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white text-lg font-black shadow-lg shadow-primary/20">
+                            {tenantBadge}
                         </div>
                         <div>
                             <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">Shop • {tenant.name}</h1>
@@ -169,39 +239,142 @@ export default function ShopPage() {
                             <h3 className="text-2xl font-black text-slate-900 dark:text-white">Pacotes favoritos</h3>
                             <p className="text-sm text-slate-500 dark:text-zinc-400">Selecione uma experiência pronta e ganhe benefícios extras.</p>
                         </div>
-                        <Button variant="outline" className="rounded-full border-slate-200 dark:border-zinc-800">
-                            Ver todos os combos
-                        </Button>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <Button variant="outline" className="rounded-full border-slate-200 dark:border-zinc-800">
+                                Ver todos os combos
+                            </Button>
+                            <div className="flex items-center gap-2 text-xs text-slate-400">
+                                <Shield className="w-4 h-4 text-primary" />
+                                Garantia BeautyFlow
+                            </div>
+                        </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {combos.filter(combo => combo.tenantId === tenant.id).map(combo => (
-                            <Card key={combo.id} className="rounded-3xl border-none shadow-lg bg-white dark:bg-zinc-900 overflow-hidden flex flex-col md:flex-row">
+                        {tenantCombos.map(combo => (
+                            <Card
+                                key={combo.id}
+                                className={cn(
+                                    "rounded-3xl border-2 border-transparent shadow-lg bg-white dark:bg-zinc-900 overflow-hidden flex flex-col md:flex-row transition-all",
+                                    activeCombo === combo.id && "border-primary/40 ring-2 ring-primary/20"
+                                )}
+                            >
                                 <div className="md:w-1/3">
-                                    <img src={combo.image} alt={combo.name} className="h-full w-full object-cover" />
+                                    <img
+                                        src={combo.imageUrl || "https://images.unsplash.com/photo-1502732722413-4b44dfa9b84c?auto=format&w=500&q=80"}
+                                        alt={combo.name}
+                                        className="h-full w-full object-cover"
+                                    />
                                 </div>
                                 <div className="flex-1 p-6 space-y-4">
-                                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400">
-                                        <Tag className="w-4 h-4" />
-                                        {combo.category}
-                                    </div>
+                                    {combo.category && (
+                                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400">
+                                            <Tag className="w-4 h-4" />
+                                            {combo.category}
+                                        </div>
+                                    )}
                                     <div>
                                         <h4 className="text-xl font-black text-slate-900 dark:text-white">{combo.name}</h4>
                                         <p className="text-sm text-slate-500 dark:text-zinc-400">{combo.description}</p>
                                     </div>
-                                    <ul className="text-xs text-slate-500 dark:text-zinc-400 space-y-1">
-                                        {combo.items.map((item) => (
-                                            <li key={item}>• {item}</li>
-                                        ))}
-                                    </ul>
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-xs text-slate-400">De R$ {combo.originalPrice}</p>
+                                            <p className="text-xs text-slate-400 line-through">R$ {combo.originalPrice}</p>
                                             <p className="text-2xl font-black text-primary">R$ {combo.price}</p>
                                         </div>
-                                        <Button className="rounded-full px-6" onClick={() => addToCart(combo.id)}>
-                                            Adicionar combo
+                                        <Button
+                                            className="rounded-full px-6"
+                                            variant={activeCombo === combo.id ? "default" : "outline"}
+                                            onClick={() => setActiveCombo(activeCombo === combo.id ? null : combo.id)}
+                                        >
+                                            {activeCombo === combo.id ? "Selecionado" : "Adicionar combo"}
                                         </Button>
                                     </div>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                    {selectedCombo && (
+                        <Card className="rounded-[2.5rem] border border-primary/20 bg-primary/5 p-6 space-y-5">
+                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/80">Combo selecionado</p>
+                                    <h4 className="text-2xl font-black text-slate-900 dark:text-white">{selectedCombo.name}</h4>
+                                    <p className="text-sm text-slate-500 dark:text-zinc-300">{selectedCombo.description}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-slate-500 line-through">De R$ {selectedCombo.originalPrice}</p>
+                                    <p className="text-3xl font-black text-primary">R$ {selectedCombo.price}</p>
+                                </div>
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-3">
+                                {comboPerks.map(perk => {
+                                    const Icon = perk.icon
+                                    return (
+                                        <div
+                                            key={perk.id}
+                                            className="rounded-2xl border border-white/40 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/60 p-4 flex gap-3"
+                                        >
+                                            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                                                <Icon className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-semibold text-slate-900 dark:text-white">{perk.title}</p>
+                                                <p className="text-xs text-slate-500 dark:text-zinc-400">{perk.description}</p>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                                <div className="text-sm text-slate-500 dark:text-zinc-400">
+                                    Programado para {tenant.name}. Confirmação imediata por WhatsApp.
+                                </div>
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <Button
+                                        className="rounded-2xl px-6 h-12"
+                                        onClick={() => router.push(`/${tenantSlug}/book?combo=${selectedCombo.id}`)}
+                                    >
+                                        Reservar combo agora
+                                        <ArrowRight className="w-4 h-4 ml-2" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="rounded-2xl px-6 h-12"
+                                        onClick={() => setActiveCombo(null)}
+                                    >
+                                        Escolher outro
+                                    </Button>
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+                </section>
+                <section className="space-y-4">
+                    <div className="flex flex-col gap-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/70">Produtos em destaque</p>
+                        <h3 className="text-2xl font-black text-slate-900 dark:text-white">Mais amados pelos clientes</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {featuredProducts.length === 0 && (
+                            <Card className="p-4 rounded-3xl border border-white/10 bg-white/70 dark:bg-zinc-900/70 shadow-sm">
+                                <p className="text-sm text-slate-500 dark:text-zinc-400">Nenhum produto em destaque no momento.</p>
+                            </Card>
+                        )}
+                        {featuredProducts.map(product => (
+                            <Card key={product.id} className="p-4 rounded-3xl border border-white/10 bg-white/70 dark:bg-zinc-900/70 shadow-sm">
+                                <div className="flex items-center justify-between mb-4">
+                                    <Badge className="rounded-full text-[10px] uppercase tracking-widest">
+                                        {product.categoryName || "Lançamento"}
+                                    </Badge>
+                                    <Star className="w-4 h-4 text-amber-400" />
+                                </div>
+                                <h4 className="text-lg font-black text-slate-900 dark:text-white">{product.name}</h4>
+                                <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2">{product.description}</p>
+                                <div className="flex items-center justify-between mt-4">
+                                    <p className="text-xl font-black text-primary">R$ {product.price.toFixed(2)}</p>
+                                    <Button size="sm" onClick={() => addToCart(product.id)} className="rounded-full px-3">
+                                        Adicionar
+                                    </Button>
                                 </div>
                             </Card>
                         ))}
@@ -245,15 +418,17 @@ export default function ShopPage() {
                                 <Card className="group relative overflow-hidden rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 flex flex-col h-full hover:shadow-2xl transition-all duration-500">
                                     <div className="aspect-square w-full overflow-hidden relative">
                                         <img
-                                            src={product.image}
+                                            src={product.imageUrl || "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&w=500&q=80"}
                                             alt={product.name}
                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                         />
-                                        <div className="absolute top-4 left-4">
-                                            <Badge className="bg-white/80 dark:bg-black/80 backdrop-blur-md text-foreground border-none font-bold text-[10px] uppercase px-3">
-                                                {product.category}
-                                            </Badge>
-                                        </div>
+                                        {product.categoryName && (
+                                            <div className="absolute top-4 left-4">
+                                                <Badge className="bg-white/80 dark:bg-black/80 backdrop-blur-md text-foreground border-none font-bold text-[10px] uppercase px-3">
+                                                    {product.categoryName}
+                                                </Badge>
+                                            </div>
+                                        )}
                                         <button className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/80 dark:bg-black/80 backdrop-blur-md flex items-center justify-center text-primary shadow-lg opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
                                             <Info className="w-5 h-5" />
                                         </button>
@@ -268,7 +443,7 @@ export default function ShopPage() {
                                         <div className="mt-6 flex items-center justify-between">
                                             <div>
                                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Preço</p>
-                                                <p className="text-xl font-black text-primary">R$ {product.price},00</p>
+                                                <p className="text-xl font-black text-primary">R$ {product.price.toFixed(2)}</p>
                                             </div>
                                             <Button
                                                 onClick={() => addToCart(product.id)}
@@ -303,7 +478,7 @@ export default function ShopPage() {
                                 <ShoppingBag className="w-5 h-5" />
                                 <span>{cart.reduce((acc, i) => acc + i.quantity, 0)} itens</span>
                             </div>
-                            <span>Finalizar Compra • R$ {cartTotal},00</span>
+                            <span>Finalizar Compra • R$ {formattedCartTotal}</span>
                             <ArrowRight className="w-5 h-5" />
                         </Button>
                     </motion.div>
@@ -337,11 +512,12 @@ export default function ShopPage() {
 
                             <div className="flex-1 space-y-6 overflow-y-auto pr-2">
                                 {cart.map(item => {
-                                    const product = inventory.find(p => p.id === item.productId)!
+                                    const product = productMap.get(item.productId)
+                                    if (!product) return null
                                     return (
                                         <div key={item.productId} className="flex gap-4 p-4 rounded-3xl bg-slate-50 dark:bg-zinc-800/50">
                                             <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
-                                                <img src={product.image} className="w-full h-full object-cover" />
+                                                <img src={product.imageUrl || "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&w=500&q=80"} className="w-full h-full object-cover" />
                                             </div>
                                             <div className="flex-1 flex flex-col justify-between">
                                                 <div>
@@ -375,16 +551,16 @@ export default function ShopPage() {
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-sm font-bold text-slate-400 uppercase tracking-widest">
                                         <span>Subtotal</span>
-                                        <span>R$ {cartTotal},00</span>
+                                        <span>R$ {formattedCartTotal}</span>
                                     </div>
                                     <div className="flex justify-between text-sm font-bold text-emerald-500 uppercase tracking-widest">
                                         <span>Desconto Pix</span>
-                                        <span>- R$ {Math.floor(cartTotal * 0.05)},00</span>
+                                        <span>- R$ {pixDiscount}</span>
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-end">
                                     <p className="text-3xl font-black text-slate-900 dark:text-white">Total</p>
-                                    <p className="text-4xl font-black text-primary">R$ {Math.floor(cartTotal * 0.95)},00</p>
+                                    <p className="text-4xl font-black text-primary">R$ {totalWithPix}</p>
                                 </div>
                                 <Button
                                     onClick={handlePurchase}

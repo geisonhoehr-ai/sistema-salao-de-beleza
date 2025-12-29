@@ -1,8 +1,10 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { tenants, type Tenant } from '@/mocks/tenants'
+import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react'
+import { tenants as mockTenants, type Tenant } from '@/mocks/tenants'
 import { useAuth } from './auth-context'
+import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase/client'
+import { getInitials } from '@/lib/utils'
 
 interface TenantContextType {
     currentTenant: Tenant
@@ -12,52 +14,115 @@ interface TenantContextType {
 
 const TenantContext = createContext<TenantContextType | undefined>(undefined)
 
+type TenantRow = {
+    id: string
+    name: string
+    slug: string
+    full_name?: string | null
+    logo_url?: string | null
+    theme?: Record<string, string | undefined> | null
+    settings?: Record<string, string | undefined> | null
+}
+
+const getInitialTenantId = () => {
+    const fallbackId = mockTenants[0]?.id ?? ''
+    if (typeof window === 'undefined') return fallbackId
+    return localStorage.getItem('currentTenantId') || fallbackId
+}
+
 export function TenantProvider({ children }: { children: ReactNode }) {
     const { user, isSuperAdmin } = useAuth()
-    const [currentTenant, setCurrentTenantState] = useState<Tenant>(tenants[0])
-    const [isHydrated, setIsHydrated] = useState(false)
+    const [tenantId, setTenantId] = useState<string>(() => getInitialTenantId())
+    const [allTenants, setAllTenants] = useState<Tenant[]>(mockTenants)
 
-    // Sync tenant with logged-in user
     useEffect(() => {
-        if (!user) return
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase || !isSupabaseConfigured) return
 
-        if (!isSuperAdmin && user.companyId) {
-            const userTenant = tenants.find(t => t.id === user.companyId)
-            if (userTenant) {
-                setCurrentTenantState(userTenant)
-                localStorage.setItem('currentTenantId', userTenant.id)
+        let isMounted = true
+
+        const mapTenant = (row: TenantRow): Tenant => {
+            const theme = row.theme ?? {}
+            const settings = row.settings ?? {}
+            const initials = getInitials(row.full_name || row.name || '')
+            const scheduling =
+                settings.scheduling_type === 'shared' ? 'shared' : 'individual'
+            return {
+                id: row.id,
+                name: row.name,
+                fullName: row.full_name || row.name,
+                logo: row.logo_url || initials,
+                customLogo: row.logo_url || undefined,
+                primaryColor: theme.primary || '#7c3aed',
+                secondaryColor: theme.secondary || '#a78bfa',
+                customPrimaryColor: theme.primary,
+                customSecondaryColor: theme.secondary,
+                description: settings.description || `Conta ${row.name}`,
+                customDomain: settings.custom_domain || `${row.slug}.beautyflow.app`,
+                slug: row.slug,
+                whatsapp: settings.whatsapp || '',
+                schedulingType: scheduling,
             }
-        } else {
-            // For super admins, allow loading from localStorage
-            const savedTenantId = localStorage.getItem('currentTenantId')
-            if (savedTenantId) {
-                const savedTenant = tenants.find(t => t.id === savedTenantId)
-                if (savedTenant) {
-                    setCurrentTenantState(savedTenant)
+        }
+
+        const fetchTenants = async () => {
+            const { data, error } = await supabase
+                .from('tenants')
+                .select('id, name, slug, full_name, logo_url, theme, settings')
+                .order('name')
+
+            if (error) {
+                console.error('[TenantProvider] Erro ao buscar tenants no Supabase:', error.message)
+                return
+            }
+
+            if (isMounted && data) {
+                const mapped = data.map(mapTenant)
+                if (mapped.length > 0) {
+                    setAllTenants(mapped)
+
+                    const hasCurrent = mapped.some((tenant) => tenant.id === tenantId)
+                    if (!hasCurrent) {
+                        const fallback = mapped[0]
+                        if (fallback) {
+                            setTenantId(fallback.id)
+                            if (typeof window !== 'undefined') {
+                                localStorage.setItem('currentTenantId', fallback.id)
+                            }
+                        }
+                    }
                 }
             }
         }
-        setIsHydrated(true)
-    }, [user, isSuperAdmin])
+
+        fetchTenants()
+
+        return () => {
+            isMounted = false
+        }
+    }, [tenantId])
+
+    const currentTenant = useMemo<Tenant>(() => {
+        const tenantList = allTenants.length > 0 ? allTenants : mockTenants
+        if (user && !isSuperAdmin && user.companyId) {
+            return tenantList.find(t => t.id === user.companyId) || tenantList[0]
+        }
+        return tenantList.find(t => t.id === tenantId) || tenantList[0]
+    }, [user, isSuperAdmin, tenantId, allTenants])
 
     const setCurrentTenant = (tenant: Tenant) => {
-        // Only allow switching if super admin
-        if (isSuperAdmin) {
-            setCurrentTenantState(tenant)
+        if (!isSuperAdmin) return
+        setTenantId(tenant.id)
+        if (typeof window !== 'undefined') {
             localStorage.setItem('currentTenantId', tenant.id)
         }
-    }
-
-    // Prevent hydration mismatch by not rendering until client-side
-    if (!isHydrated) {
-        return null
     }
 
     return (
         <TenantContext.Provider value={{
             currentTenant,
             setCurrentTenant,
-            allTenants: tenants
+            allTenants
         }}>
             {children}
         </TenantContext.Provider>

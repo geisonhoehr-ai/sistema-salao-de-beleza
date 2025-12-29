@@ -1,11 +1,12 @@
 "use client"
 
-import { Bell, ChevronDown, Check, Search, Command } from "lucide-react"
+import { Bell, ChevronDown, Check, Search, Command, Calendar, DollarSign, Settings, Timer, Megaphone } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useTenant } from "@/contexts/tenant-context"
 import { useAuth } from "@/contexts/auth-context"
 import { cn } from "@/lib/utils"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { Badge } from "@/components/ui/badge"
@@ -37,21 +38,14 @@ export function Header() {
         setNotifications(notifications.map(n => ({ ...n, read: true })))
     }
 
-    const getNotificationIcon = (type: string) => {
-        const icons = {
-            appointment: '📅',
-            payment: '💰',
-            system: '⚙️',
-            reminder: '⏰'
-        }
-        return icons[type as keyof typeof icons] || '📢'
+    const notificationIconMap: Record<string, LucideIcon> = {
+        appointment: Calendar,
+        payment: DollarSign,
+        system: Settings,
+        reminder: Timer
     }
 
-    useEffect(() => {
-        if (!isSuperAdmin && isTenantMenuOpen) {
-            setIsTenantMenuOpen(false)
-        }
-    }, [isSuperAdmin, isTenantMenuOpen])
+    const getNotificationIcon = (type: string) => notificationIconMap[type] || Megaphone
 
     const handleTenantSelect = (tenantId: string) => {
         const tenant = allTenants.find(t => t.id === tenantId)
@@ -136,7 +130,12 @@ export function Header() {
                                                             !n.read ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-slate-50 dark:hover:bg-zinc-800/50"
                                                         )}
                                                     >
-                                                        <div className="text-2xl mt-0.5">{getNotificationIcon(n.type)}</div>
+                                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center">
+                                                        {(() => {
+                                                            const Icon = getNotificationIcon(n.type)
+                                                            return <Icon className="w-5 h-5 text-primary" />
+                                                        })()}
+                                                    </div>
                                                         <div className="flex-1 space-y-1">
                                                             <div className="flex items-center justify-between">
                                                                 <p className="font-bold text-sm text-slate-900 dark:text-white leading-none">{n.title}</p>

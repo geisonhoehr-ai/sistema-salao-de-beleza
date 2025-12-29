@@ -72,3 +72,5 @@ export function CustomerTrustBar({ tenant, className }: CustomerTrustBarProps) {
     )
 }
 
+
+

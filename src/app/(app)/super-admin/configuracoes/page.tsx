@@ -15,7 +15,7 @@ export default function ConfiguracoesPage() {
         platformName: "BeautyFlow",
         platformEmail: "suporte@beautyflow.com",
         platformDomain: "beautyflow.app",
-        logo: "💎"
+        logo: "BF"
     })
 
     const [integrations, setIntegrations] = useState({
@@ -102,12 +102,12 @@ export default function ConfiguracoesPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="logo">Logo (Emoji)</Label>
+                            <Label htmlFor="logo">Logo (iniciais)</Label>
                             <Input
                                 id="logo"
                                 value={platformSettings.logo}
-                                onChange={(e) => setPlatformSettings({ ...platformSettings, logo: e.target.value })}
-                                maxLength={2}
+                                onChange={(e) => setPlatformSettings({ ...platformSettings, logo: e.target.value.toUpperCase() })}
+                                maxLength={3}
                             />
                         </div>
                     </div>

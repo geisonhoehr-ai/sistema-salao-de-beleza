@@ -2,18 +2,20 @@
 
 import { motion } from "framer-motion"
 import {
-    DollarSign,
-    TrendingUp,
-    TrendingDown,
-    Users,
-    ArrowUpRight,
     ArrowDownRight,
-    Search,
-    Filter,
-    Download,
+    ArrowUpRight,
     CreditCard,
-    Wallet,
-    Info
+    DollarSign,
+    Download,
+    Filter,
+    Handshake,
+    Info,
+    Search,
+    Smartphone,
+    TrendingDown,
+    TrendingUp,
+    Users,
+    Wallet
 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -40,6 +42,12 @@ export default function FinanceiroPage() {
         { id: 4, customer: "Douglas Lima", service: "Progressiva", amount: 350.00, method: "Pix", date: "2025-12-26", status: "completed" },
         { id: 5, customer: "Elena Mendes", service: "Coloração", amount: 200.00, method: "Cartão", date: "2025-12-25", status: "completed" },
     ]
+
+    const transactionIconMap = {
+        Pix: Smartphone,
+        "Cartão": CreditCard,
+        Local: Handshake,
+    }
 
     const staffCommissions = [
         { name: "Ana Paula", role: "Cabeleireira", total: 1850.00, count: 24, commission: "35%" },
@@ -175,32 +183,49 @@ export default function FinanceiroPage() {
                     </div>
 
                     <div className="space-y-4">
-                        {transactions.map((tx) => (
-                            <div key={tx.id} className="flex items-center justify-between p-4 rounded-3xl border border-slate-50 dark:border-zinc-800 hover:bg-slate-50/50 dark:hover:bg-zinc-800/50 transition-all group">
-                                <div className="flex items-center gap-4">
-                                    <div className={cn(
-                                        "w-12 h-12 rounded-2xl flex items-center justify-center text-xl",
-                                        tx.method === 'Pix' ? "bg-emerald-500/10 text-emerald-500" :
-                                            tx.method === 'Cartão' ? "bg-blue-500/10 text-blue-500" : "bg-slate-500/10 text-slate-500"
-                                    )}>
-                                        {tx.method === 'Pix' ? '💠' : tx.method === 'Cartão' ? '💳' : '🤝'}
+                        {transactions.map((tx) => {
+                            const MethodIcon = transactionIconMap[tx.method as keyof typeof transactionIconMap] || Wallet
+                            return (
+                                <div
+                                    key={tx.id}
+                                    className="flex items-center justify-between p-4 rounded-3xl border border-slate-50 dark:border-zinc-800 hover:bg-slate-50/50 dark:hover:bg-zinc-800/50 transition-all group"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div
+                                            className={cn(
+                                                "w-12 h-12 rounded-2xl flex items-center justify-center",
+                                                tx.method === 'Pix'
+                                                    ? "bg-emerald-500/10 text-emerald-500"
+                                                    : tx.method === 'Cartão'
+                                                        ? "bg-blue-500/10 text-blue-500"
+                                                        : "bg-slate-500/10 text-slate-500"
+                                            )}
+                                        >
+                                            <MethodIcon className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-900 dark:text-white">{tx.customer}</h4>
+                                            <p className="text-xs text-slate-400 font-medium">{tx.service} • {tx.method}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h4 className="font-bold text-slate-900 dark:text-white">{tx.customer}</h4>
-                                        <p className="text-xs text-slate-400 font-medium">{tx.service} • {tx.method}</p>
+                                    <div className="text-right">
+                                        <p className="font-black text-slate-900 dark:text-white">
+                                            R$ {tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </p>
+                                        <Badge
+                                            className={cn(
+                                                "font-bold text-[10px] uppercase px-2 py-0.5 rounded-full border-none",
+                                                tx.status === 'completed'
+                                                    ? "bg-emerald-500/10 text-emerald-500"
+                                                    : "bg-amber-500/10 text-amber-500"
+                                            )}
+                                        >
+                                            {tx.status === 'completed' ? 'Recebido' : 'Pendente'}
+                                        </Badge>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className="font-black text-slate-900 dark:text-white">R$ {tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                    <Badge className={cn(
-                                        "font-bold text-[10px] uppercase px-2 py-0.5 rounded-full border-none",
-                                        tx.status === 'completed' ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500"
-                                    )}>
-                                        {tx.status === 'completed' ? 'Recebido' : 'Pendente'}
-                                    </Badge>
-                                </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
 
                     <Button variant="ghost" className="w-full mt-6 rounded-2xl font-bold text-slate-400">

@@ -113,8 +113,8 @@ export default function EstoquePage() {
                                         className="p-4 rounded-3xl border-none shadow-sm bg-white dark:bg-zinc-900 hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer group"
                                     >
                                         <div className="flex items-start justify-between mb-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center text-2xl group-hover:bg-primary/10 transition-colors">
-                                                📦
+                                            <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                                                <Package className="w-5 h-5 text-primary" />
                                             </div>
                                             <Badge variant="outline" className="rounded-full border-slate-100 dark:border-zinc-800 font-bold text-[10px] uppercase">
                                                 {product.category}
@@ -245,8 +245,8 @@ export default function EstoquePage() {
                                 {products.map(product => (
                                     <div key={product.id} className="flex items-center justify-between p-6 rounded-3xl border border-slate-50 dark:border-zinc-800 group hover:border-primary/20 hover:bg-primary/[0.01] transition-all">
                                         <div className="flex items-center gap-6">
-                                            <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-2xl">
-                                                📦
+                                            <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center">
+                                                <Package className="w-5 h-5 text-primary" />
                                             </div>
                                             <div>
                                                 <h4 className="font-bold text-slate-900 dark:text-white">{product.name}</h4>
@@ -315,7 +315,9 @@ export default function EstoquePage() {
                                             <TableRow key={product.id} className="border-slate-50 dark:border-zinc-800/50 hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors">
                                                 <TableCell className="pl-8 py-5">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center">📦</div>
+                                                <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center">
+                                                    <Package className="w-4 h-4 text-primary" />
+                                                </div>
                                                         <div className="font-bold text-slate-900 dark:text-white uppercase tracking-tight">{product.name}</div>
                                                     </div>
                                                 </TableCell>

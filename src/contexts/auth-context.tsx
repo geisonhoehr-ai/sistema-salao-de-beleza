@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, ReactNode } from 'react'
 
 export type UserRole = 'super_admin' | 'company_admin' | 'employee' | 'customer'
 
@@ -61,22 +61,20 @@ const MOCK_PASSWORDS: Record<string, string> = {
     'gerente@studioglamour.com': 'senha'
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null)
-    const [isHydrated, setIsHydrated] = useState(false)
+function getStoredUser(): User | null {
+    if (typeof window === 'undefined') return null
+    const savedUser = window.localStorage.getItem('currentUser')
+    if (!savedUser) return null
+    try {
+        return JSON.parse(savedUser) as User
+    } catch (error) {
+        console.error('Error loading user:', error)
+        return null
+    }
+}
 
-    // Load user from localStorage on mount
-    useEffect(() => {
-        const savedUser = localStorage.getItem('currentUser')
-        if (savedUser) {
-            try {
-                setUser(JSON.parse(savedUser))
-            } catch (error) {
-                console.error('Error loading user:', error)
-            }
-        }
-        setIsHydrated(true)
-    }, [])
+export function AuthProvider({ children }: { children: ReactNode }) {
+    const [user, setUser] = useState<User | null>(() => getStoredUser())
 
     const login = async (email: string, password: string): Promise<boolean> => {
         // Mock authentication - in production, this would call an API
@@ -94,11 +92,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const logout = () => {
         setUser(null)
         localStorage.removeItem('currentUser')
-    }
-
-    // Prevent hydration mismatch
-    if (!isHydrated) {
-        return null
     }
 
     return (

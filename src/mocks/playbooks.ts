@@ -59,5 +59,4 @@ export const playbooks: PlaybookAction[] = [
             "Enviar relatório para o cliente"
         ]
     }
-]*** End Patch  Reason: Merge conflict or file limit reached. Partial patch was applied. Output may be corrupt.***
-
+]

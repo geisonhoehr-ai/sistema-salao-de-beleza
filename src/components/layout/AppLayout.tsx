@@ -17,9 +17,8 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-    const { user, isSuperAdmin } = useAuth()
+    const { isSuperAdmin } = useAuth()
     const pathname = usePathname()
-    const { currentTenant } = useTenant()
 
     const isProfessionalView = pathname.startsWith("/profissional")
 
@@ -53,8 +52,8 @@ function ProfessionalShell({ children }: { children: ReactNode }) {
 
     const navItems = [
         { href: "/profissional/dashboard", label: "Home", icon: Home },
-        { href: "/agenda", label: "Agenda", icon: CalendarDays },
-        { href: "/financeiro", label: "Financeiro", icon: Wallet },
+        { href: "/profissional/agenda", label: "Agenda", icon: CalendarDays },
+        { href: "/profissional/financeiro", label: "Financeiro", icon: Wallet },
         { href: "/perfil", label: "Perfil", icon: UserIcon },
     ]
 

@@ -28,8 +28,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { tenants } from "@/mocks/tenants"
 import { appointments } from "@/mocks/data"
 import { services } from "@/mocks/services"
-import { mockCustomers } from "@/mocks/customers"
-import { cn } from "@/lib/utils"
+import { mockCustomers, type Customer } from "@/mocks/customers"
+import { cn, getInitials } from "@/lib/utils"
 
 export default function CustomerProfilePage() {
     const params = useParams()
@@ -42,21 +42,73 @@ export default function CustomerProfilePage() {
         return tenants.find(t => t.slug === tenantSlug) || tenants[0]
     }, [tenantSlug])
 
-    const customer = useMemo(() => {
+    const customer = useMemo<Customer | null>(() => {
         if (!customerEmail) return null
-        return mockCustomers.find(c => c.email === customerEmail) || {
+        const existing = mockCustomers.find(c => c.email === customerEmail)
+        if (existing) return existing
+        return {
+            id: `generated-${customerEmail}`,
+            tenantId: tenant.id,
             name: customerEmail.split('@')[0],
             email: customerEmail,
-            points: 150, // Default for non-mocked emails
-            status: 'active'
+            phone: "",
+            cpf: "",
+            points: 150,
+            status: 'active',
+            lastVisit: new Date().toISOString(),
+            totalSpent: 0,
+            avatar: "",
         }
-    }, [customerEmail])
+    }, [customerEmail, tenant.id])
 
     // Find all appointments for this email
     const allAppointments = useMemo(() => {
         if (!customerEmail) return []
         return appointments.filter(apt => apt.customer.toLowerCase().includes(customerEmail.split('@')[0].toLowerCase()))
     }, [customerEmail])
+
+    const upcomingAppointment = useMemo(() => {
+        return allAppointments
+            .map((apt) => {
+                const fullDate = parseISO(apt.date)
+                const [hours, minutes] = apt.time.split(":").map(Number)
+                fullDate.setHours(hours, minutes, 0, 0)
+                return { ...apt, fullDate }
+            })
+            .filter((apt) => isAfter(apt.fullDate, new Date()))
+            .sort((a, b) => a.fullDate.getTime() - b.fullDate.getTime())[0]
+    }, [allAppointments])
+
+    const upcomingService = useMemo(() => {
+        if (!upcomingAppointment) return null
+        return services.find((service) => service.id === upcomingAppointment.serviceId) || null
+    }, [upcomingAppointment])
+
+    const isFirstAccess = allAppointments.length === 0
+
+    const timelineEvents = useMemo(() => {
+        const future = allAppointments
+            .map((apt) => {
+                const fullDate = parseISO(apt.date)
+                const [hours, minutes] = apt.time.split(":").map(Number)
+                fullDate.setHours(hours, minutes, 0, 0)
+                return { ...apt, fullDate }
+            })
+            .filter((apt) => isAfter(apt.fullDate, new Date()))
+            .sort((a, b) => a.fullDate.getTime() - b.fullDate.getTime())
+
+        const past = allAppointments
+            .filter(apt => apt.status === 'completed')
+            .map(apt => {
+                const fullDate = parseISO(apt.date)
+                const [hours, minutes] = apt.time.split(":").map(Number)
+                fullDate.setHours(hours, minutes, 0, 0)
+                return { ...apt, fullDate }
+            })
+            .sort((a, b) => b.fullDate.getTime() - a.fullDate.getTime())
+
+        return [...future.slice(0, 2), ...past.slice(0, 3)]
+    }, [allAppointments])
 
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
@@ -98,8 +150,8 @@ export default function CustomerProfilePage() {
             <Card className="p-5 rounded-3xl border-none shadow-sm bg-white dark:bg-zinc-900 group">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-xl">
-                            {aptTenant?.logo || '🏢'}
+                        <div className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-sm font-black text-primary">
+                            {aptTenant ? (aptTenant.logo || getInitials(aptTenant.fullName || aptTenant.name)) : getInitials(apt.customer)}
                         </div>
                         <div>
                             <h4 className="font-bold text-slate-900 dark:text-white uppercase text-[10px] tracking-widest">{aptTenant?.name}</h4>
@@ -181,6 +233,53 @@ export default function CustomerProfilePage() {
             </header>
 
             <main className="max-w-2xl mx-auto p-6 space-y-8">
+                <motion.div initial="hidden" animate="visible" variants={containerVariants}>
+                    {upcomingAppointment ? (
+                        <Card className="p-6 rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 flex flex-col gap-4">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/70">Seu próximo horário</p>
+                                    <h3 className="text-2xl font-black text-slate-900 dark:text-white">
+                                        {format(upcomingAppointment.fullDate, "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                                    </h3>
+                                    <p className="text-sm text-slate-500 dark:text-zinc-400">
+                                        {upcomingService?.name || "Serviço agendado"} • {upcomingAppointment.status}
+                                    </p>
+                                </div>
+                                <Badge variant="outline" className="rounded-full border-emerald-200 text-emerald-600 font-black text-[10px] uppercase tracking-widest">
+                                    Confirmado
+                                </Badge>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <Button className="flex-1 rounded-2xl bg-primary text-white font-bold h-12" onClick={() => router.push(`/${tenantSlug}/book`)}>
+                                    Reagendar
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 rounded-2xl border-slate-200 dark:border-zinc-800 h-12 font-bold"
+                                    onClick={() => router.push(`/${tenantSlug}/book`)}
+                                >
+                                    Marcar novo serviço
+                                </Button>
+                            </div>
+                        </Card>
+                    ) : (
+                        <Card className="p-6 rounded-[2.5rem] border-none shadow-xl bg-gradient-to-br from-primary to-purple-500 text-white space-y-4">
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/70">Primeiro acesso</p>
+                            <h3 className="text-2xl font-black leading-tight">Comece a construir seu histórico de beleza</h3>
+                            <p className="text-sm text-white/80">
+                                Agende seu primeiro horário e acompanhe tudo por aqui: confirmações, pontos e ofertas exclusivas.
+                            </p>
+                            <Button
+                                onClick={() => router.push(`/${tenantSlug}/book`)}
+                                className="w-full h-12 rounded-2xl bg-white text-primary font-black hover:bg-white/95"
+                            >
+                                Agendar agora
+                            </Button>
+                        </Card>
+                    )}
+                </motion.div>
+
                 {/* Loyalty Card */}
                 <motion.div initial="hidden" animate="visible" variants={containerVariants}>
                     <Card className="p-8 rounded-[2.5rem] border-none shadow-2xl bg-slate-900 text-white relative overflow-hidden">
@@ -192,6 +291,11 @@ export default function CustomerProfilePage() {
                                     <h2 className="text-4xl font-black">{customer?.name}</h2>
                                     <p className="text-slate-400 font-medium text-sm">{customer?.email}</p>
                                 </div>
+                                {isFirstAccess && (
+                                    <Badge className="bg-white/10 backdrop-blur-md text-white border-none rounded-full px-4 py-1.5 font-bold uppercase text-[10px] tracking-widest">
+                                        Primeiro acesso
+                                    </Badge>
+                                )}
                                 <div className="flex gap-3">
                                     <Badge className="bg-white/10 backdrop-blur-md text-white border-none rounded-full px-4 py-1.5 font-bold uppercase text-[10px] tracking-widest">
                                         Nível Diamante
@@ -205,13 +309,54 @@ export default function CustomerProfilePage() {
                                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-1">Saldo Atual</p>
                                 <div className="flex items-center justify-end gap-3 text-primary">
                                     <Sparkles className="w-10 h-10" />
-                                    <span className="text-6xl font-black tracking-tighter">{(customer as any)?.points || 0}</span>
+                                    <span className="text-6xl font-black tracking-tighter">{customer?.points ?? 0}</span>
                                 </div>
                                 <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">BeautyPoints</p>
                             </div>
                         </div>
                     </Card>
                 </motion.div>
+
+                {timelineEvents.length > 0 && (
+                    <motion.div initial="hidden" animate="visible" variants={containerVariants}>
+                        <Card className="p-6 rounded-[2.5rem] border-none shadow-lg bg-white dark:bg-zinc-900 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">Linha do tempo</p>
+                                    <h3 className="text-xl font-black text-slate-900 dark:text-white">Sua jornada Beauty</h3>
+                                </div>
+                                <Badge variant="secondary" className="rounded-full text-[10px] uppercase tracking-widest">
+                                    {timelineEvents.length} eventos
+                                </Badge>
+                            </div>
+                            <div className="space-y-3">
+                                {timelineEvents.map((event) => {
+                                    const serviceInfo = services.find(service => service.id === event.serviceId)
+                                    const statusLabel = event.status === 'completed' ? 'Concluído' : event.status === 'confirmed' ? 'Confirmado' : 'Agendado'
+                                    return (
+                                        <div key={event.id} className="flex items-center gap-3 rounded-2xl border border-slate-100 dark:border-zinc-800 p-3">
+                                            <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex flex-col items-center justify-center">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                                    {format(event.fullDate, "dd", { locale: ptBR })}
+                                                </span>
+                                                <span className="text-xs font-black text-slate-900 dark:text-white">
+                                                    {format(event.fullDate, "MMM", { locale: ptBR })}
+                                                </span>
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-semibold text-slate-900 dark:text-white">{serviceInfo?.name || "Serviço"}</p>
+                                                <p className="text-xs text-slate-500">{format(event.fullDate, "HH:mm", { locale: ptBR })} • {event.status === 'completed' ? 'Realizado' : 'Próximo'}</p>
+                                            </div>
+                                            <Badge variant="outline" className="rounded-full text-[10px] uppercase tracking-widest">
+                                                {statusLabel}
+                                            </Badge>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </Card>
+                    </motion.div>
+                )}
 
                 {/* Reminders Status Section */}
                 <motion.div
@@ -301,7 +446,7 @@ export default function CustomerProfilePage() {
                                     <Lock className="w-6 h-6 text-slate-400" />
                                 </div>
                                 <h4 className="font-bold text-slate-900 dark:text-white">Escova + Hidratação</h4>
-                                <p className="text-xs text-slate-500 mt-1">Faltam {(2000 - ((customer as any)?.points || 0))} pontos.</p>
+                                <p className="text-xs text-slate-500 mt-1">Faltam {2000 - (customer?.points ?? 0)} pontos.</p>
                             </Card>
                         </div>
                     </TabsContent>

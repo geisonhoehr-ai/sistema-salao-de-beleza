@@ -44,5 +44,4 @@ export const combos: Combo[] = [
         category: "Estética",
         image: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&w=500&q=80",
     }
-]*** End Patch
-
+]

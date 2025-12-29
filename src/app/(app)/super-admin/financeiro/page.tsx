@@ -208,3 +208,76 @@ export default function FinanceiroPage() {
                 </Card>
             </div>
 
+            <div className="grid gap-6 lg:grid-cols-2">
+                <Card className="rounded-2xl border-none shadow-sm bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md">
+                    <CardHeader>
+                        <CardTitle>Distribuição por Plano</CardTitle>
+                        <CardDescription>Receita por plano ativo</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-[320px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={planDistribution}>
+                                    <XAxis dataKey="name" stroke="#888888" fontSize={12} />
+                                    <YAxis stroke="#888888" fontSize={12} />
+                                    <Tooltip contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }} />
+                                    <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="rounded-2xl border-none shadow-sm bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                        <div>
+                            <CardTitle>Invoices recentes</CardTitle>
+                            <CardDescription>Cobranças monitoradas</CardDescription>
+                        </div>
+                        <Button variant="outline" size="sm" className="rounded-full gap-2">
+                            <RefreshCw className="w-4 h-4" />
+                            Atualizar
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {mockInvoices.map(invoice => (
+                            <div key={invoice.id} className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-zinc-800 p-4">
+                                <div>
+                                    <p className="text-sm font-semibold">{invoice.company}</p>
+                                    <p className="text-xs text-muted-foreground">{invoice.id} • vence {invoice.due}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-bold">R$ {invoice.amount.toFixed(2)}</p>
+                                    <Badge className="mt-1 capitalize" variant="secondary">
+                                        {invoice.status}
+                                    </Badge>
+                                </div>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            </div>
+
+            <Card className="rounded-2xl border-none shadow-sm bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md">
+                <CardHeader>
+                    <CardTitle>Alertas e ações</CardTitle>
+                    <CardDescription>Priorize dunning, ofertas e suporte</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {[
+                        { label: "Trials acabando", value: "6 empresas", action: "Enviar oferta Professional" },
+                        { label: "Pendências +5 dias", value: "3 invoices", action: "Rodar playbook PIX" },
+                        { label: "Chargebacks", value: "1 caso", action: "Abrir ticket financeiro" },
+                        { label: "MRR em risco", value: "R$ 1.091", action: "Priorizar dunning" }
+                    ].map(alert => (
+                        <div key={alert.label} className="rounded-2xl border border-slate-100 dark:border-zinc-800 p-4 space-y-1">
+                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{alert.label}</p>
+                            <p className="text-xl font-black text-slate-900 dark:text-white">{alert.value}</p>
+                            <p className="text-xs text-primary font-semibold">{alert.action}</p>
+                        </div>
+                    ))}
+                </CardContent>
+            </Card>
+        </div>
+    )
+}

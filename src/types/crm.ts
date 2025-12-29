@@ -1,0 +1,12 @@
+export type ClientRecord = {
+    id: string
+    tenantId: string
+    name: string
+    email: string
+    phone: string
+    lastVisit: string
+    totalSpent: number
+    status: "active" | "inactive" | "churned"
+    avatar: string
+}
+

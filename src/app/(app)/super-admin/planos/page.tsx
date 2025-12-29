@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { plans as initialPlans, type Plan } from "@/mocks/companies"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ import { Check, Star, Edit, Trash2, Plus } from "lucide-react"
 
 export default function PlanosPage() {
     const [plans, setPlans] = useState(initialPlans)
+    const planIdCounter = useRef(initialPlans.length + 1)
     const [showNewPlan, setShowNewPlan] = useState(false)
     const [showEditPlan, setShowEditPlan] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
@@ -35,8 +36,10 @@ export default function PlanosPage() {
     const [newFeature, setNewFeature] = useState("")
 
     const handleCreatePlan = () => {
+        const newPlanId = `plan-${planIdCounter.current}`
+        planIdCounter.current += 1
         const newPlan: Plan = {
-            id: `plan-${Date.now()}`,
+            id: newPlanId,
             name: formData.name,
             description: formData.description,
             price: formData.price,

@@ -42,8 +42,8 @@ export default function LoginPage() {
             <Card className="w-full max-w-md">
                 <CardHeader className="space-y-1 text-center">
                     <div className="flex justify-center mb-4">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
-                            <span className="text-3xl">💎</span>
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-black text-xl">
+                            BF
                         </div>
                     </div>
                     <CardTitle className="text-2xl font-bold">BeautyFlow</CardTitle>

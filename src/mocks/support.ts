@@ -139,5 +139,4 @@ export const incidents: Incident[] = [
         description: "Fornecedor aplicou patch corretivo. Operação normal.",
         status: "resolved"
     }
-]*** End Patch
-
+]

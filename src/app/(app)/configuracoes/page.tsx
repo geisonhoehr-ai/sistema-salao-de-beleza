@@ -201,7 +201,7 @@ export default function ConfiguracoesPage() {
                         <Sparkles className="absolute top-4 right-4 w-6 h-6 text-yellow-400" />
                         <div className="relative z-10 space-y-4">
                             <h3 className="font-black text-xl leading-tight">Domínio Próprio?</h3>
-                            <p className="text-sm text-indigo-100 italic">"Use suaempresa.com.br ao invés de beautyflow.app"</p>
+                            <p className="text-sm text-indigo-100 italic">&ldquo;Use suaempresa.com.br ao invés de beautyflow.app&rdquo;</p>
                             <Button className="w-full h-12 rounded-xl bg-white text-indigo-600 font-bold hover:bg-white/90">
                                 Ver Planos Pro
                             </Button>

@@ -290,7 +290,7 @@ export default function DashboardPage() {
                         <Sparkles className="absolute top-4 right-4 w-6 h-6 text-primary" />
                         <div className="relative z-10 space-y-4">
                             <h4 className="font-black text-lg leading-tight">Dica do Dia</h4>
-                            <p className="text-xs text-slate-400 leading-relaxed italic">"Clientes que compram o Shampoo Premium voltam 24% mais vezes. Ofereça no fechamento!"</p>
+                            <p className="text-xs text-slate-400 leading-relaxed italic">&ldquo;Clientes que compram o Shampoo Premium voltam 24% mais vezes. Ofereça no fechamento!&rdquo;</p>
                             <Button className="w-full h-12 rounded-xl bg-white text-slate-900 font-bold hover:bg-slate-100">
                                 Ver Relatório de Recompra
                             </Button>

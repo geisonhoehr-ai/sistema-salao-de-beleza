@@ -33,6 +33,7 @@ import { FormDialog } from "@/components/ui/form-dialog"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { DetailDrawer } from "@/components/ui/detail-drawer"
 import { Search, MoreVertical, CheckCircle, XCircle, Pause, Play, Edit } from "lucide-react"
+import { getInitials } from "@/lib/utils"
 
 const activationScore = (company: Company) => {
     let score = 0
@@ -64,7 +65,6 @@ export default function EmpresasPage() {
         phone: "",
         address: "",
         planId: "starter",
-        logo: "🏢"
     })
 
     const filteredCompanies = companies
@@ -90,6 +90,7 @@ export default function EmpresasPage() {
 
     const handleCreateCompany = () => {
         const plan = plans.find(p => p.id === formData.planId)!
+        const generatedLogo = getInitials(formData.name || formData.fullName || "Nova Empresa")
         const newCompany: Company = {
             id: String(companies.length + 1),
             name: formData.name,
@@ -97,7 +98,7 @@ export default function EmpresasPage() {
             email: formData.email,
             phone: formData.phone,
             address: formData.address,
-            logo: formData.logo,
+            logo: generatedLogo,
             primaryColor: '#8B5CF6',
             secondaryColor: '#A78BFA',
             customDomain: `${formData.name.toLowerCase().replace(/\s/g, '')}.beautyflow.app`,
@@ -118,7 +119,7 @@ export default function EmpresasPage() {
 
         setCompanies([...companies, newCompany])
         setShowNewCompany(false)
-        setFormData({ name: "", fullName: "", email: "", phone: "", address: "", planId: "starter", logo: "🏢" })
+        setFormData({ name: "", fullName: "", email: "", phone: "", address: "", planId: "starter" })
     }
 
     const handleSuspend = (company: Company) => {

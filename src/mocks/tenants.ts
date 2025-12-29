@@ -21,7 +21,7 @@ export const tenants: Tenant[] = [
         id: '1',
         name: 'Beleza Pura',
         fullName: 'Salão Beleza Pura',
-        logo: '💎',
+        logo: 'BP',
         primaryColor: '#8B5CF6', // Purple
         secondaryColor: '#A78BFA',
         description: 'Especializado em tratamentos capilares premium',
@@ -36,7 +36,7 @@ export const tenants: Tenant[] = [
         id: '2',
         name: 'Studio Glamour',
         fullName: 'Studio Glamour Beauty',
-        logo: '✨',
+        logo: 'SG',
         primaryColor: '#EC4899', // Pink
         secondaryColor: '#F472B6',
         description: 'Seu destino para beleza e bem-estar',
@@ -51,7 +51,7 @@ export const tenants: Tenant[] = [
         id: '3',
         name: 'Espaço Elegance',
         fullName: 'Espaço Elegance Spa',
-        logo: '🌸',
+        logo: 'EE',
         primaryColor: '#06B6D4', // Cyan
         secondaryColor: '#22D3EE',
         description: 'Experiência completa de spa e estética',

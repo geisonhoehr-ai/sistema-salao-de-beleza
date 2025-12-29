@@ -1,14 +1,17 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { Plus, Search, Filter, MoreHorizontal, Mail, Phone, Calendar, Edit, Trash2, LayoutGrid, List as ListIcon, Wallet } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { Plus, Search, Filter, MoreHorizontal, Mail, Phone, Calendar, Edit, Trash2, LayoutGrid, List as ListIcon, Wallet, Gift, AlertTriangle, Send, Activity, MessageSquare, PhoneCall, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { clients } from "@/mocks/data"
+import type { ClientRecord } from "@/types/crm"
 import { useTenant } from "@/contexts/tenant-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Progress } from "@/components/ui/progress"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
     Table,
     TableBody,
@@ -28,44 +31,156 @@ import { Label } from "@/components/ui/label"
 import { FormDialog } from "@/components/ui/form-dialog"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { differenceInDays } from "date-fns"
+import { useTenantCustomers } from "@/hooks/useTenantRecords"
 
-const segments = [
+const mapMockClient = (client: typeof clients[number]): ClientRecord => ({
+    id: client.id,
+    tenantId: client.tenantId,
+    name: client.name,
+    email: client.email,
+    phone: client.phone,
+    lastVisit: client.lastVisit,
+    totalSpent: client.totalSpent,
+    status: client.status === "inactive" || client.status === "churned" ? client.status : "active",
+    avatar: client.avatar ?? "",
+})
+
+interface Segment {
+    id: string
+    label: string
+    description: string
+    filter: (client: ClientRecord) => boolean
+}
+
+const segments: Segment[] = [
     {
         id: "vip",
         label: "VIPs",
         description: "Ticket médio acima de R$ 1.000",
-        filter: (client: any) => client.totalSpent >= 1000
+        filter: (client) => client.totalSpent >= 1000
     },
     {
         id: "recent",
         label: "Recentes",
         description: "Visitaram nos últimos 30 dias",
-        filter: (client: any) => differenceInDays(new Date(), new Date(client.lastVisit)) <= 30
+        filter: (client) => differenceInDays(new Date(), new Date(client.lastVisit)) <= 30
     },
     {
         id: "risk",
         label: "Em risco",
         description: "60+ dias sem visitar",
-        filter: (client: any) => differenceInDays(new Date(), new Date(client.lastVisit)) > 60
+        filter: (client) => differenceInDays(new Date(), new Date(client.lastVisit)) > 60
     }
 ]
+
+const statusOptions = [
+    { id: "active", label: "Ativos" },
+    { id: "inactive", label: "Inativos" },
+    { id: "churned", label: "Churn" },
+]
+
+const spendingFilters = [
+    { id: "all", label: "Todos os tickets", range: null },
+    { id: "low", label: "Até R$ 200", range: [0, 200] },
+    { id: "medium", label: "R$ 200 - R$ 800", range: [200, 800] },
+    { id: "high", label: "Acima de R$ 800", range: [800, Infinity] },
+]
+
+const availableTags = [
+    { id: "VIP", label: "VIP" },
+    { id: "Recente", label: "Recentes" },
+    { id: "Reativar", label: "Reativar" },
+    { id: "Churn", label: "Churn" },
+]
+
+const savedFilters = [
+    {
+        id: "vip_reengage",
+        title: "VIP • Recompra",
+        description: "Ativos, ticket alto, últimos 30 dias",
+        status: ["active"],
+        spending: "high",
+        tags: ["VIP"],
+        segment: "recent"
+    },
+    {
+        id: "risk_campaign",
+        title: "Em risco",
+        description: "60+ dias sem visitar",
+        status: [],
+        spending: "all",
+        tags: ["Reativar"],
+        segment: "risk"
+    },
+    {
+        id: "churn_alert",
+        title: "Churn alert",
+        description: "Clientes perdidos para reativar",
+        status: ["churned"],
+        spending: "all",
+        tags: ["Churn"]
+    }
+]
+
+const upcomingEvents = [
+    { id: "birthday", title: "Aniversário • Juliana", date: "03 Jan", action: "Enviar mimo VIP", impact: "+85% retenção" },
+    { id: "loyalty", title: "Pontos expiram • Lucas", date: "Hoje", action: "Ativar campanha fidelidade", impact: "Ticket +R$120" },
+    { id: "risk", title: "90 dias sem visita • Carla", date: "Amanhã", action: "Oferecer combo glow", impact: "Recuperação 42%" },
+]
+
+const lifecycleStages = [
+    { id: "acquisition", label: "Aquisição digital", description: "Novos cadastros no mês", value: 48, delta: "+12%" },
+    { id: "activation", label: "Conversão para 1º serviço", description: "Clientes que efetivaram atendimento", value: 64, delta: "+5%" },
+    { id: "retention", label: "Base fiel", description: "Clientes que retornam em 45 dias", value: 58, delta: "+3%" },
+]
+
+const interactionSignals = [
+    { id: "whatsapp-confirm", client: "Bruna Andrade", detail: "Confirmou horário via WhatsApp", time: "09:12", status: "Confirmado", channel: "WhatsApp", tone: "emerald", icon: MessageSquare },
+    { id: "pix-reminder", client: "Leo Costa", detail: "Abriu lembrete Pix, aguardando confirmação", time: "10:05", status: "Aguardando", channel: "SMS", tone: "amber", icon: Activity },
+    { id: "call-upsell", client: "Paula Freitas", detail: "Aceitou upgrade tratamento capilar", time: "11:40", status: "Upgrade", channel: "Ligação", tone: "blue", icon: PhoneCall },
+]
+
+const automationRecommendations = [
+    { id: "post-service", title: "Follow-up pós-serviço", description: "Envia pesquisa + oferta 2h após atendimento.", impact: "+18% recompra" },
+    { id: "winback", title: "Winback 60 dias", description: "Fluxo automático com cupom limitado.", impact: "Recuperação 32%" },
+    { id: "vip-survey", title: "Pesquisa VIP trimestral", description: "Capta feedback de clientes de alto ticket.", impact: "+25 NPS" },
+]
+
+const toneClassMap: Record<string, string> = {
+    emerald: "bg-emerald-500/10 text-emerald-600",
+    amber: "bg-amber-500/10 text-amber-600",
+    blue: "bg-blue-500/10 text-blue-600",
+}
 
 export default function ClientsPage() {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedSegment, setSelectedSegment] = useState("all")
+    const [statusFilter, setStatusFilter] = useState<string[]>([])
+    const [spendingFilter, setSpendingFilter] = useState("all")
+    const [tagFilter, setTagFilter] = useState<string[]>([])
     const [showNewClient, setShowNewClient] = useState(false)
     const [showEditClient, setShowEditClient] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
-    const [selectedClient, setSelectedClient] = useState<any>(null)
-    const [clientsList, setClientsList] = useState(clients)
+    const [selectedClient, setSelectedClient] = useState<ClientRecord | null>(null)
+    const [clientsList, setClientsList] = useState<ClientRecord[]>(clients.map(mapMockClient))
     const { currentTenant } = useTenant()
+    const { data: tenantCustomers } = useTenantCustomers(currentTenant.id)
+    const [activeSavedFilter, setActiveSavedFilter] = useState<string | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const [importMessage, setImportMessage] = useState("")
 
     const [formData, setFormData] = useState({
         name: "",
         email: "",
         phone: ""
     })
+
+    useEffect(() => {
+        if (tenantCustomers.length > 0) {
+            setClientsList(tenantCustomers)
+        }
+    }, [tenantCustomers])
 
     // Filter clients by current tenant
     const tenantClients = clientsList.filter(client => client.tenantId === currentTenant.id)
@@ -89,10 +204,32 @@ export default function ClientsPage() {
             const segment = segments.find(segment => segment.id === selectedSegment)
             return segment ? segment.filter(client) : true
         })
+        .filter(client => {
+            if (statusFilter.length === 0) return true
+            return statusFilter.includes(client.status)
+        })
+        .filter(client => {
+            const filterConfig = spendingFilters.find(filter => filter.id === spendingFilter)
+            if (!filterConfig || !filterConfig.range) return true
+            const [min, max] = filterConfig.range
+            return client.totalSpent >= min && client.totalSpent <= max
+        })
+        .filter(client => {
+            if (tagFilter.length === 0) return true
+            const clientTags = getClientTags(client)
+            return tagFilter.every(tag => clientTags.includes(tag))
+        })
+
+    const generateClientId = () => {
+        if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+            return crypto.randomUUID()
+        }
+        return `client-${Date.now()}-${Math.random().toString(16).slice(2)}`
+    }
 
     const handleCreateClient = () => {
-        const newClient = {
-            id: String(clientsList.length + 1),
+        const newClient: ClientRecord = {
+            id: generateClientId(),
             tenantId: currentTenant.id,
             ...formData,
             status: 'active',
@@ -106,6 +243,7 @@ export default function ClientsPage() {
     }
 
     const handleEditClient = () => {
+        if (!selectedClient) return
         setClientsList(clientsList.map(c =>
             c.id === selectedClient.id ? { ...c, ...formData } : c
         ))
@@ -114,12 +252,89 @@ export default function ClientsPage() {
     }
 
     const handleDeleteClient = () => {
+        if (!selectedClient) return
         setClientsList(clientsList.filter(c => c.id !== selectedClient.id))
         setShowConfirm(false)
         setSelectedClient(null)
     }
 
-    const openEditDialog = (client: any) => {
+    const handleImportClick = () => {
+        setImportMessage("")
+        fileInputRef.current?.click()
+    }
+
+    const parseLineToClient = (line: string): ClientRecord | null => {
+        const parts = line.split(/[,;\t]/).map(part => part.trim()).filter(Boolean)
+        if (parts.length < 2) return null
+        const [name, email, phone = ""] = parts
+        if (!name || !email) return null
+        return {
+            id: generateClientId(),
+            tenantId: currentTenant.id,
+            name,
+            email,
+            phone,
+            lastVisit: new Date().toISOString(),
+            totalSpent: 0,
+            status: "active",
+            avatar: "",
+        }
+    }
+
+    const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        event.target.value = ""
+        if (!file) return
+
+        const reader = new FileReader()
+        reader.onload = () => {
+            const text = reader.result?.toString() ?? ""
+            const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean)
+            const imported = lines
+                .map(parseLineToClient)
+                .filter((client): client is ClientRecord => client !== null)
+
+            if (imported.length === 0) {
+                setImportMessage("Nenhum cliente válido encontrado no arquivo.")
+                return
+            }
+
+            setClientsList(prev => [...prev, ...imported])
+            setImportMessage(`${imported.length} cliente(s) importado(s) com sucesso.`)
+        }
+        reader.onerror = () => setImportMessage("Não foi possível ler o arquivo selecionado.")
+        reader.readAsText(file, "utf-8")
+    }
+
+    const handleExport = (format: "csv" | "txt") => {
+        const tenantClients = clientsList.filter(client => client.tenantId === currentTenant.id)
+        if (tenantClients.length === 0) {
+            setImportMessage("Não há clientes para exportar.")
+            return
+        }
+
+        const header = "Nome,Email,Telefone,Status"
+        const rows = tenantClients.map(client => {
+            const fields = [client.name, client.email, client.phone, client.status]
+            return fields.map(field => `"${(field ?? "").replace(/"/g, '""')}"`).join(",")
+        })
+        const content = [header, ...rows].join("\n")
+        const mime = format === "csv" ? "text/csv" : "text/plain"
+        const extension = format === "csv" ? "csv" : "txt"
+
+        const blob = new Blob([content], { type: `${mime};charset=utf-8;` })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `clientes-${currentTenant.slug}.${extension}`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        setImportMessage(`Arquivo ${extension.toUpperCase()} exportado.`)
+    }
+
+    const openEditDialog = (client: ClientRecord) => {
         setSelectedClient(client)
         setFormData({
             name: client.name,
@@ -129,7 +344,7 @@ export default function ClientsPage() {
         setShowEditClient(true)
     }
 
-    const openDeleteDialog = (client: any) => {
+    const openDeleteDialog = (client: ClientRecord) => {
         setSelectedClient(client)
         setShowConfirm(true)
     }
@@ -139,8 +354,23 @@ export default function ClientsPage() {
         setSelectedClient(null)
     }
 
+    const handleApplySavedFilter = (filterConfig: (typeof savedFilters)[number]) => {
+        setActiveSavedFilter(filterConfig.id)
+        setStatusFilter(filterConfig.status ?? [])
+        setSpendingFilter(filterConfig.spending ?? "all")
+        setTagFilter(filterConfig.tags ?? [])
+        setSelectedSegment(filterConfig.segment ?? "all")
+    }
+
     return (
         <div className="space-y-8">
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.txt"
+                className="hidden"
+                onChange={handleFileImport}
+            />
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -223,6 +453,31 @@ export default function ClientsPage() {
                         count={tenantClients.filter(segment.filter).length}
                         onClick={() => setSelectedSegment(segment.id)}
                     />
+                ))}
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+                {savedFilters.map(filter => (
+                    <button
+                        key={filter.id}
+                        type="button"
+                        onClick={() => handleApplySavedFilter(filter)}
+                        className={cn(
+                            "rounded-2xl border border-black/5 dark:border-white/5 bg-gradient-to-br from-white to-slate-50 dark:from-zinc-900 dark:to-zinc-950 p-4 text-left transition-all",
+                            activeSavedFilter === filter.id ? "shadow-lg ring-2 ring-primary/30" : "hover:shadow-md"
+                        )}
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-white">{filter.title}</p>
+                                <p className="text-xs text-muted-foreground">{filter.description}</p>
+                            </div>
+                            <Badge variant={activeSavedFilter === filter.id ? "default" : "secondary"} className="rounded-full text-[10px]">
+                                Aplicar
+                            </Badge>
+                        </div>
+                        <p className="mt-3 text-[10px] uppercase tracking-[0.3em] text-primary/60">Filtro salvo</p>
+                    </button>
                 ))}
             </div>
 
@@ -318,6 +573,287 @@ export default function ClientsPage() {
                         <ListIcon className="w-4 h-4" />
                     </Button>
                 </div>
+            </div>
+
+            {/* Smart Filters */}
+            <div className="grid gap-4 lg:grid-cols-3">
+                <div className="rounded-2xl border border-black/5 dark:border-white/5 bg-white/70 dark:bg-zinc-900/70 p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground">Status</p>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setStatusFilter([])}>
+                            Limpar
+                        </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {statusOptions.map(option => {
+                            const active = statusFilter.includes(option.id)
+                            return (
+                                <button
+                                    key={option.id}
+                                    type="button"
+                                    onClick={() =>
+                                        setStatusFilter(prev =>
+                                            active ? prev.filter(id => id !== option.id) : [...prev, option.id]
+                                        )
+                                    }
+                                    className={cn(
+                                        "px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-widest transition-colors",
+                                        active
+                                            ? "bg-primary text-white shadow-lg"
+                                            : "bg-slate-100 dark:bg-zinc-800 text-slate-500"
+                                    )}
+                                >
+                                    {option.label}
+                                </button>
+                            )
+                        })}
+                    </div>
+                </div>
+                <div className="rounded-2xl border border-black/5 dark:border-white/5 bg-white/70 dark:bg-zinc-900/70 p-5 space-y-3">
+                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground">Ticket Médio</p>
+                    <div className="grid gap-2">
+                        {spendingFilters.map(filter => (
+                            <button
+                                key={filter.id}
+                                type="button"
+                                onClick={() => setSpendingFilter(filter.id)}
+                                className={cn(
+                                    "w-full px-4 py-2 rounded-xl text-sm font-semibold text-left transition-colors",
+                                    spendingFilter === filter.id
+                                        ? "bg-slate-900 text-white shadow-lg"
+                                        : "bg-slate-100 dark:bg-zinc-800 text-slate-600"
+                                )}
+                            >
+                                {filter.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                <div className="rounded-2xl border border-black/5 dark:border-white/5 bg-white/70 dark:bg-zinc-900/70 p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground">Tags</p>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setTagFilter([])}>
+                            Limpar
+                        </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {availableTags.map(tag => {
+                            const active = tagFilter.includes(tag.id)
+                            return (
+                                <button
+                                    key={tag.id}
+                                    type="button"
+                                    onClick={() =>
+                                        setTagFilter(prev =>
+                                            active ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
+                                        )
+                                    }
+                                    className={cn(
+                                        "px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-widest border transition-colors",
+                                        active
+                                            ? "bg-primary/10 text-primary border-primary/30"
+                                            : "border-slate-200 text-slate-500 dark:border-zinc-700 dark:text-zinc-400"
+                                    )}
+                                >
+                                    {tag.label}
+                                </button>
+                            )
+                        })}
+                    </div>
+                </div>
+            </div>
+
+        <section className="grid gap-4 lg:grid-cols-3">
+            <Card className="rounded-[2rem] border-none shadow-sm bg-white/70 dark:bg-zinc-900/70">
+                <CardHeader>
+                    <CardTitle>Saúde do funil</CardTitle>
+                    <p className="text-sm text-muted-foreground">Acompanhe conversões por etapa do relacionamento.</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {lifecycleStages.map(stage => (
+                        <div key={stage.id} className="space-y-2">
+                            <div className="flex items-center justify-between gap-4">
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{stage.label}</p>
+                                    <p className="text-xs text-muted-foreground">{stage.description}</p>
+                                </div>
+                                <div className="text-right space-y-1">
+                                    <p className="text-lg font-black text-slate-900 dark:text-white">{stage.value}%</p>
+                                    <Badge variant="secondary" className="rounded-full text-[10px] uppercase tracking-widest">
+                                        {stage.delta}
+                                    </Badge>
+                                </div>
+                            </div>
+                            <Progress value={stage.value} className="h-2 bg-slate-100 dark:bg-zinc-800" />
+                        </div>
+                    ))}
+                </CardContent>
+            </Card>
+
+            <Card className="rounded-[2rem] border-none shadow-sm bg-white/70 dark:bg-zinc-900/70">
+                <CardHeader>
+                    <CardTitle>Sinais em tempo real</CardTitle>
+                    <p className="text-sm text-muted-foreground">Interações que exigem resposta rápida.</p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    {interactionSignals.map(signal => {
+                        const Icon = signal.icon
+                        const toneClass = toneClassMap[signal.tone] ?? "bg-slate-200 text-slate-600"
+                        return (
+                            <div key={signal.id} className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-zinc-800 p-3">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${toneClass}`}>
+                                    <Icon className="w-5 h-5" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{signal.client}</p>
+                                    <p className="text-xs text-muted-foreground">{signal.detail}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs font-bold text-slate-900 dark:text-white">{signal.time}</p>
+                                    <Badge variant="outline" className="rounded-full text-[10px] uppercase tracking-widest mt-1">
+                                        {signal.status}
+                                    </Badge>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </CardContent>
+            </Card>
+
+            <Card className="rounded-[2rem] border-none shadow-sm bg-white/70 dark:bg-zinc-900/70">
+                <CardHeader>
+                    <CardTitle>Playbooks automáticos</CardTitle>
+                    <p className="text-sm text-muted-foreground">Ative fluxos para cada cenário.</p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    {automationRecommendations.map(item => (
+                        <div key={item.id} className="rounded-2xl border border-slate-200 dark:border-zinc-800 p-4 space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.title}</p>
+                                    <p className="text-xs text-muted-foreground">{item.description}</p>
+                                </div>
+                                <Badge variant="secondary" className="rounded-full text-[10px] uppercase tracking-widest">
+                                    {item.impact}
+                                </Badge>
+                            </div>
+                            <Button variant="ghost" size="sm" className="h-9 rounded-full gap-2 text-primary hover:text-primary">
+                                <Sparkles className="w-4 h-4" />
+                                Ativar fluxo
+                            </Button>
+                        </div>
+                    ))}
+                </CardContent>
+            </Card>
+        </section>
+
+            <div className="rounded-2xl border border-black/5 dark:border-white/5 bg-white/70 dark:bg-zinc-900/70 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Ações inteligentes</p>
+                    <p className="text-lg font-black text-slate-900 dark:text-white">Ative campanhas e tags sem sair da base</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" className="rounded-2xl" onClick={() => alert("Campanha agendada!")}>
+                        Enviar campanha
+                    </Button>
+                    <Button variant="outline" className="rounded-2xl" onClick={() => alert("Tag aplicada!")}>
+                        Adicionar etiqueta
+                    </Button>
+                    <Button variant="default" className="rounded-2xl" onClick={() => alert("Exportação iniciada!")}>
+                        Exportar Segmento
+                    </Button>
+                </div>
+            </div>
+
+        <Card className="rounded-[2rem] border-none shadow-sm bg-white/80 dark:bg-zinc-900/70">
+            <CardHeader>
+                <CardTitle>Importação & Exportação</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                    Importe novos clientes via arquivos `.csv` ou `.txt` e exporte sua base atual com um clique.
+                </p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+                <div className="flex flex-wrap gap-3">
+                    <Button className="rounded-2xl" onClick={handleImportClick}>
+                        Importar CSV/TXT
+                    </Button>
+                    <Button variant="outline" className="rounded-2xl" onClick={() => handleExport("csv")}>
+                        Exportar CSV
+                    </Button>
+                    <Button variant="outline" className="rounded-2xl" onClick={() => handleExport("txt")}>
+                        Exportar TXT
+                    </Button>
+                </div>
+                {importMessage && (
+                    <p className="text-xs font-semibold text-primary">{importMessage}</p>
+                )}
+                <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+                    Formato sugerido: Nome,Email,Telefone
+                </p>
+            </CardContent>
+        </Card>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+                <Card className="rounded-[2rem] border-none shadow-sm bg-white/70 dark:bg-zinc-900/70">
+                    <CardHeader>
+                        <CardTitle>Eventos importantes</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {upcomingEvents.map(event => (
+                            <div key={event.id} className="flex items-center gap-4 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 p-3">
+                                <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary font-black flex flex-col items-center justify-center">
+                                    <span className="text-[10px] uppercase tracking-[0.3em]">Data</span>
+                                    <span className="text-sm">{event.date}</span>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{event.title}</p>
+                                    <p className="text-xs text-muted-foreground">{event.action}</p>
+                                </div>
+                                <Badge variant="secondary" className="rounded-full text-[10px] uppercase tracking-widest">
+                                    {event.impact}
+                                </Badge>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+
+                <Card className="rounded-[2rem] border-none shadow-sm bg-white/70 dark:bg-zinc-900/70">
+                    <CardHeader>
+                        <CardTitle>Campanhas recomendadas</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <div className="rounded-2xl border border-slate-200 dark:border-zinc-800 p-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-white">Reativação risco</p>
+                                <p className="text-xs text-muted-foreground">30 clientes aguardando incentivo</p>
+                            </div>
+                            <Button variant="outline" className="rounded-full text-xs gap-1">
+                                <AlertTriangle className="w-3 h-3" />
+                                Executar
+                            </Button>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 dark:border-zinc-800 p-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-white">Surpresa VIP</p>
+                                <p className="text-xs text-muted-foreground">Aniversariantes da semana</p>
+                            </div>
+                            <Button variant="outline" className="rounded-full text-xs gap-1">
+                                <Gift className="w-3 h-3" />
+                                Programar
+                            </Button>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 dark:border-zinc-800 p-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-white">Campanha recorrência</p>
+                                <p className="text-xs text-muted-foreground">Clientes ativos há 15 dias</p>
+                            </div>
+                            <Button variant="outline" className="rounded-full text-xs gap-1">
+                                <Send className="w-3 h-3" />
+                                Disparar
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Content View */}
@@ -438,11 +974,30 @@ export default function ClientsPage() {
                     ))}
                 </div>
             )}
+            <div className="md:hidden fixed bottom-4 left-4 right-4 flex items-center gap-2 bg-white/90 dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-3">
+                <Button className="flex-1 rounded-xl" onClick={() => setShowNewClient(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Novo
+                </Button>
+                <Button variant="outline" className="flex-1 rounded-xl" onClick={() => alert("Campanha mobile!")}>
+                    <Send className="w-4 h-4 mr-2" />
+                    Campanha
+                </Button>
+                <Button variant="ghost" size="icon" className="rounded-xl border">
+                    <Filter className="w-4 h-4" />
+                </Button>
+            </div>
         </div>
     )
 }
 
-function ClientCard({ client, onEdit, onDelete }: { client: any, onEdit: () => void, onDelete: () => void }) {
+interface ClientCardProps {
+    client: ClientRecord
+    onEdit: () => void
+    onDelete: () => void
+}
+
+function ClientCard({ client, onEdit, onDelete }: ClientCardProps) {
     const tags = getClientTags(client)
     return (
         <div className="group relative bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl rounded-[2rem] p-6 border border-white/20 shadow-sm hover:shadow-xl hover:bg-white dark:hover:bg-zinc-900 transition-all duration-300">
@@ -514,7 +1069,7 @@ function ClientCard({ client, onEdit, onDelete }: { client: any, onEdit: () => v
     )
 }
 
-function getClientTags(client: any) {
+function getClientTags(client: ClientRecord) {
     const tags: string[] = []
     const days = differenceInDays(new Date(), new Date(client.lastVisit))
     if (client.totalSpent >= 1000) tags.push("VIP")
