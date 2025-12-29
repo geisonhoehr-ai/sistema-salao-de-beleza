@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useRef, useState, type ChangeEvent } from "react"
 import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { format, parseISO, differenceInHours, isAfter, addHours } from "date-fns"
@@ -85,6 +85,8 @@ export default function CustomerProfilePage() {
     }, [upcomingAppointment])
 
     const isFirstAccess = allAppointments.length === 0
+    const [avatarPreview, setAvatarPreview] = useState<string>(customer?.avatar || "")
+    const avatarInputRef = useRef<HTMLInputElement>(null)
 
     const timelineEvents = useMemo(() => {
         const future = allAppointments
@@ -113,6 +115,24 @@ export default function CustomerProfilePage() {
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+    }
+
+    const handleAvatarUpload = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        event.target.value = ""
+        if (!file) return
+
+        const reader = new FileReader()
+        reader.onload = () => {
+            if (typeof reader.result === "string") {
+                setAvatarPreview(reader.result)
+            }
+        }
+        reader.readAsDataURL(file)
+    }
+
+    const triggerAvatarUpload = () => {
+        avatarInputRef.current?.click()
     }
 
     if (!customerEmail) {
@@ -233,6 +253,13 @@ export default function CustomerProfilePage() {
             </header>
 
             <main className="max-w-2xl mx-auto p-6 space-y-8">
+                <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                />
                 <motion.div initial="hidden" animate="visible" variants={containerVariants}>
                     {upcomingAppointment ? (
                         <Card className="p-6 rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 flex flex-col gap-4">
@@ -284,8 +311,8 @@ export default function CustomerProfilePage() {
                 <motion.div initial="hidden" animate="visible" variants={containerVariants}>
                     <Card className="p-8 rounded-[2.5rem] border-none shadow-2xl bg-slate-900 text-white relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2" />
-                        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-                            <div className="space-y-4">
+                        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                            <div className="space-y-4 flex-1">
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Beauty Rewards</p>
                                     <h2 className="text-4xl font-black">{customer?.name}</h2>
@@ -305,13 +332,33 @@ export default function CustomerProfilePage() {
                                     </Badge>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-1">Saldo Atual</p>
-                                <div className="flex items-center justify-end gap-3 text-primary">
-                                    <Sparkles className="w-10 h-10" />
-                                    <span className="text-6xl font-black tracking-tighter">{customer?.points ?? 0}</span>
+                            <div className="flex flex-col items-center lg:items-end gap-4">
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-28 h-28 rounded-full border-4 border-white/10 shadow-xl overflow-hidden bg-slate-800 flex items-center justify-center text-3xl font-black">
+                                        {avatarPreview ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img src={avatarPreview} alt={customer?.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            getInitials(customer?.name || "Cliente")
+                                        )}
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                    className="rounded-full px-4 text-xs uppercase tracking-[0.3em]"
+                                        onClick={triggerAvatarUpload}
+                                    >
+                                        Trocar foto
+                                    </Button>
                                 </div>
-                                <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">BeautyPoints</p>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-1">Saldo Atual</p>
+                                    <div className="flex items-center justify-end gap-3 text-primary">
+                                        <Sparkles className="w-10 h-10" />
+                                        <span className="text-6xl font-black tracking-tighter">{customer?.points ?? 0}</span>
+                                    </div>
+                                    <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">BeautyPoints</p>
+                                </div>
                             </div>
                         </div>
                     </Card>
