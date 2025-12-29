@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { format, addDays, isSameDay, startOfToday, parseISO } from "date-fns"
+import { format, addDays, isSameDay, startOfToday } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import {
     ArrowRight,
@@ -27,18 +27,26 @@ import {
     Wallet
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import bcrypt from "bcryptjs"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { tenants } from "@/mocks/tenants"
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp"
-import { services, employees } from "@/mocks/services"
-import { appointments } from "@/mocks/data"
-import { mockCustomers } from "@/mocks/customers"
-import { combos } from "@/mocks/combos"
 import { cn, getInitials } from "@/lib/utils"
 import { CustomerTrustBar } from "@/components/CustomerTrustBar"
 import { CustomerReviews } from "@/components/CustomerReviews"
+import {
+    useTenantAppointments,
+    useTenantBySlug,
+    useTenantCombos,
+    useTenantCustomers,
+    useTenantEmployees,
+    useTenantServices,
+    useTenantStaffAvailability,
+} from "@/hooks/useTenantRecords"
+import type { ComboRecord, EmployeeRecord, ServiceRecord, StaffAvailabilityRecord } from "@/types/catalog"
+import type { ClientRecord } from "@/types/crm"
+import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
 
 type Step = 'service' | 'professional' | 'datetime' | 'client_info' | 'confirmation' | 'payment' | 'success'
 
@@ -70,6 +78,14 @@ const PAYMENT_METHODS: PaymentMethod[] = [
     { id: 'local', label: 'Pagar no Local', icon: Wallet, description: 'Pague ao finalizar o serviço' },
 ]
 
+type EmployeeSchedule = Record<typeof weekDayKeys[number], { start: string; end: string }[]>
+
+type EmployeeWithSchedule = EmployeeRecord & {
+    name: string
+    workingHours: EmployeeSchedule
+    specialties: string[]
+}
+
 const trustHighlights = [
     { title: "Padrão BeautyFlow", description: "Equipe selecionada, avaliação 4.9/5", icon: Star },
     { title: "Confirmação imediata", description: "Whatsapp + e-mail com todos os detalhes", icon: MessageCircle },
@@ -78,77 +94,177 @@ const trustHighlights = [
 
 const normalizeCpf = (value: string) => value.replace(/\D/g, "")
 
-const findCustomerByCpf = (cpf: string) => mockCustomers.find((customer) => normalizeCpf(customer.cpf) === cpf)
+const formatSlotTime = (value: string | null | undefined) => {
+    if (!value) return ""
+    return value.slice(0, 5)
+}
 
-const findCustomerByEmail = (email: string) =>
-    mockCustomers.find((customer) => customer.email.toLowerCase() === email.toLowerCase())
+const formatCpfDisplay = (value: string) => {
+    const digits = normalizeCpf(value)
+    if (digits.length !== 11) return value
+    return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+}
+
+const getServiceBuffer = (service: ServiceRecord | null, key: "bufferBefore" | "bufferAfter") => {
+    if (!service?.metadata) return 0
+    const rawValue = service.metadata[key as keyof typeof service.metadata]
+    if (typeof rawValue === "number") return rawValue
+    if (typeof rawValue === "string") {
+        const parsed = Number(rawValue)
+        return Number.isFinite(parsed) ? parsed : 0
+    }
+    return 0
+}
+
+const createEmptySchedule = (): EmployeeSchedule => {
+    return weekDayKeys.reduce((acc, day) => {
+        acc[day] = []
+        return acc
+    }, {} as EmployeeSchedule)
+}
+
+const buildScheduleFromSlots = (slots: StaffAvailabilityRecord[]): EmployeeSchedule => {
+    const schedule = createEmptySchedule()
+
+    slots.forEach(slot => {
+        const key = weekDayKeys[slot.weekday]
+        if (!key) return
+        schedule[key].push({
+            start: formatSlotTime(slot.startTime),
+            end: formatSlotTime(slot.endTime),
+        })
+    })
+
+    const hasAvailability = Object.values(schedule).some(day => day.length > 0)
+
+    if (!hasAvailability) {
+        ;["monday", "tuesday", "wednesday", "thursday", "friday"].forEach(day => {
+            const typedDay = day as typeof weekDayKeys[number]
+            schedule[typedDay].push({ start: "09:00", end: "18:00" })
+        })
+    }
+
+    return schedule
+}
 
 export default function BookingPage() {
     const params = useParams()
     const router = useRouter()
     const tenantSlug = params.tenantSlug as string
 
-    // Find tenant by slug (in a real app, this would be an API call)
-    const tenant = useMemo(() => {
-        return tenants.find(t => t.slug === tenantSlug) || tenants[0]
-    }, [tenantSlug])
+    const { tenant, loading: tenantLoading } = useTenantBySlug(tenantSlug)
+    const tenantId = tenant?.id
 
-    const tenantInitials = useMemo(() => getInitials(tenant.fullName || tenant.name), [tenant.fullName, tenant.name])
-    const tenantBadge = tenant.logo || tenantInitials || "BF"
+    const { data: serviceRecords, loading: servicesLoading } = useTenantServices(tenantId)
+    const { data: employeeRecords, loading: employeesLoading } = useTenantEmployees(tenantId)
+    const { data: appointmentRecords, loading: appointmentsLoading } = useTenantAppointments(tenantId)
+    const { data: customerRecords, loading: customersLoading } = useTenantCustomers(tenantId)
+    const { data: comboRecords, loading: combosLoading } = useTenantCombos(tenantId)
+    const { data: availabilityRecords, loading: availabilityLoading } = useTenantStaffAvailability(tenantId)
+
+    const supabase = getSupabaseBrowserClient()
+    const supabaseReady = Boolean(isSupabaseConfigured && supabase && tenantId)
+    const isLoadingData = tenantLoading || servicesLoading || employeesLoading || appointmentsLoading || customersLoading || combosLoading || availabilityLoading
+
+    const tenantInitials = useMemo(() => getInitials(tenant?.fullName || tenant?.name || ""), [tenant?.fullName, tenant?.name])
+    const tenantBadge = tenant?.logo || tenantInitials || "BF"
 
     const whatsappUrl = useMemo(() => {
-        const message = encodeURIComponent(`Olá, gostaria de agendar com ${tenant.fullName}!`)
+        if (!tenant?.whatsapp) return ""
+        const message = encodeURIComponent(`Olá, gostaria de agendar com ${tenant.fullName || tenant.name}!`)
         return `https://wa.me/${tenant.whatsapp}?text=${message}`
-    }, [tenant.fullName, tenant.whatsapp])
+    }, [tenant?.fullName, tenant?.name, tenant?.whatsapp])
 
-    const handleWhatsAppContact = () => {
-        window.open(whatsappUrl, "_blank")
-    }
+    const availabilityByEmployee = useMemo(() => {
+        const map = new Map<string, StaffAvailabilityRecord[]>()
+        availabilityRecords.forEach(slot => {
+            const existing = map.get(slot.employeeId) ?? []
+            existing.push(slot)
+            map.set(slot.employeeId, existing)
+        })
+        return map
+    }, [availabilityRecords])
+
+    const employeesWithSchedules = useMemo<EmployeeWithSchedule[]>(() => {
+        return employeeRecords.map(employee => {
+            const slots = availabilityByEmployee.get(employee.id) ?? []
+            return {
+                ...employee,
+                name: employee.fullName,
+                workingHours: buildScheduleFromSlots(slots),
+                specialties: employee.specialties ?? ["Atendimento completo"],
+            }
+        })
+    }, [employeeRecords, availabilityByEmployee])
 
     const [step, setStep] = useState<Step>('service')
-    const [selectedService, setSelectedService] = useState<typeof services[0] | null>(null)
-    const [selectedEmployee, setSelectedEmployee] = useState<typeof employees[0] | null>(null)
+    const [selectedService, setSelectedService] = useState<ServiceRecord | null>(null)
+    const [selectedEmployee, setSelectedEmployee] = useState<EmployeeWithSchedule | null>(null)
     const [selectedDate, setSelectedDate] = useState<Date>(startOfToday())
     const [selectedTime, setSelectedTime] = useState<string | null>(null)
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'pix' | 'card' | 'local' | null>(null)
-    const showSummary = step === 'confirmation' || step === SUCCESS_STEP
-    const tenantPhone = tenant.whatsapp ? `+${tenant.whatsapp}` : null
+    const [isAuthenticated, setIsAuthenticated] = useState(false)
+    const [authError, setAuthError] = useState("")
+    const [isAuthenticating, setIsAuthenticating] = useState(false)
+    const [isCompletingBooking, setIsCompletingBooking] = useState(false)
+    const showSummary = step === 'confirmation' || step === 'payment' || step === SUCCESS_STEP
+    const tenantPhone = tenant?.whatsapp ? `+${tenant.whatsapp}` : null
+
+    if (!tenant && isLoadingData) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-zinc-950">
+                <div className="text-center space-y-3">
+                    <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="text-slate-500 dark:text-zinc-400 font-medium">Carregando experiência de agendamento...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (!tenant) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-zinc-950 p-6 text-center">
+                <div className="space-y-4 max-w-md">
+                    <h1 className="text-3xl font-black text-slate-900 dark:text-white">Ops! Salão não encontrado</h1>
+                    <p className="text-slate-500 dark:text-zinc-400">Verifique se o link do agendamento está correto ou fale com o suporte.</p>
+                    <Button onClick={() => router.push("/")}>Voltar para o início</Button>
+                </div>
+            </div>
+        )
+    }
 
     const voucherCode = useMemo(() => {
         if (!selectedService) {
             return "BF0000"
         }
         const datePart = format(selectedDate, "ddMM")
-        const servicePart = selectedService.id.toString().padStart(2, '0').slice(-2)
+        const serviceFragment = selectedService.id.replace(/[^A-Za-z0-9]/g, "")
+        const servicePart = serviceFragment.slice(-2).padStart(2, "0").toUpperCase()
         return `BF${datePart}${servicePart}`
     }, [selectedDate, selectedService])
 
     // Up-sell Logic: Find a service for the next slot
     const upsellService = useMemo(() => {
-        if (step !== 'success' || !selectedTime) return null
+        if (step !== "success" || !selectedTime || !tenant || !selectedService) return null
 
-        // 1. Get next slot
-        const timeSlots = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"]
-        const currentIdx = timeSlots.indexOf(selectedTime)
-        if (currentIdx === -1 || currentIdx === timeSlots.length - 1) return null
+        const slotOptions = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"]
+        const currentIdx = slotOptions.indexOf(selectedTime)
+        if (currentIdx === -1 || currentIdx === slotOptions.length - 1) return null
 
-        const nextSlot = timeSlots[currentIdx + 1]
+        const nextSlot = slotOptions[currentIdx + 1]
+        const otherServices = serviceRecords.filter(service => service.tenantId === tenant.id && service.id !== selectedService.id)
+        if (otherServices.length === 0) return null
 
-        // 2. Filter tenant services that AREN'T the selected one
-        const otherServices = services.filter(s => s.tenantId === tenant.id && s.id !== selectedService?.id)
+        const candidate = otherServices.find(service => service.durationMinutes <= 60) || otherServices[0]
+        const hasConflict = appointmentRecords.some(apt => {
+            if (apt.tenantId !== tenant.id || !apt.startAt) return false
+            const aptStart = new Date(apt.startAt)
+            if (!isSameDay(aptStart, selectedDate)) return false
+            return format(aptStart, "HH:mm") === nextSlot
+        })
 
-        // 3. For the mockup, we suggest the first one that is "quick" (like Manicure)
-        const candidate = otherServices.find(s => s.duration <= 60) || otherServices[0]
-
-        // 4. Check if slot is available (simulated)
-        const isTaken = appointments.some(apt =>
-            apt.tenantId === tenant.id &&
-            apt.time === nextSlot &&
-            format(parseISO(apt.date), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
-        )
-
-        return isTaken ? null : { service: candidate, time: nextSlot }
-    }, [step, selectedTime, tenant.id, selectedService?.id, selectedDate])
+        return hasConflict ? null : { service: candidate, time: nextSlot }
+    }, [step, selectedTime, tenant, selectedService, serviceRecords, appointmentRecords, selectedDate])
 
     // Client Info State
     const [clientData, setClientData] = useState({
@@ -159,16 +275,246 @@ export default function BookingPage() {
         password: "",
         isExisting: false
     })
+    const [authenticatedCustomer, setAuthenticatedCustomer] = useState<ClientRecord | null>(null)
+
+    const authMode: 'login' | 'register' = clientData.isExisting ? "login" : "register"
+    const canSubmitAuthentication = authMode === "login"
+        ? Boolean(isCpfReady && clientData.password)
+        : Boolean(isCpfReady && clientData.name && clientData.email && clientData.phone && clientData.password)
+
+    useEffect(() => {
+        setIsAuthenticated(false)
+        setAuthError("")
+        setAuthenticatedCustomer(null)
+    }, [clientData.cpf])
+
+    const handleAuthentication = async () => {
+        setIsAuthenticating(true)
+        setAuthError("")
+
+        try {
+            if (!tenant) {
+                setAuthError("Selecione um salão válido antes de continuar.")
+                return
+            }
+
+            const normalizedCpfValue = normalizeCpf(clientData.cpf)
+
+            if (authMode === "login") {
+                if (normalizedCpfValue.length !== 11 || !clientData.password) {
+                    setAuthError("Informe CPF e senha para prosseguir.")
+                    return
+                }
+
+                const existingCustomer = customersByDocument.get(normalizedCpfValue)
+                if (!existingCustomer) {
+                    setAuthError("CPF não identificado. Faça seu primeiro acesso.")
+                    return
+                }
+
+                if (!supabaseReady || !supabase) {
+                    setAuthError("Serviço indisponível. Tente novamente em instantes.")
+                    return
+                }
+
+                const { data: credential, error } = await supabase
+                    .from("customer_credentials")
+                    .select("id, secret_hash")
+                    .eq("tenant_id", tenant.id)
+                    .eq("customer_id", existingCustomer.id)
+                    .eq("identity_type", "cpf")
+                    .maybeSingle()
+
+                if (error || !credential) {
+                    console.error("[customer_credentials]", error?.message)
+                    setAuthError("Não encontramos sua senha. Tente redefinir ou crie um novo acesso.")
+                    return
+                }
+
+                const storedSecret = credential.secret_hash ?? ""
+                const isValidSecret = storedSecret
+                    ? storedSecret.startsWith("$2")
+                        ? await bcrypt.compare(clientData.password, storedSecret)
+                        : storedSecret === clientData.password
+                    : false
+
+                if (!isValidSecret) {
+                    setAuthError("Senha incorreta. Tente novamente.")
+                    return
+                }
+
+                setClientData(prev => ({
+                    ...prev,
+                    name: existingCustomer.name,
+                    email: existingCustomer.email,
+                    phone: existingCustomer.phone,
+                    cpf: existingCustomer.document ? formatCpfDisplay(existingCustomer.document) : prev.cpf,
+                    isExisting: true,
+                }))
+                setAuthenticatedCustomer(existingCustomer)
+                setIsAuthenticated(true)
+            } else {
+                if (
+                    normalizedCpfValue.length !== 11 ||
+                    !clientData.name ||
+                    !clientData.email ||
+                    !clientData.phone ||
+                    !clientData.password
+                ) {
+                    setAuthError("Preencha todos os campos para criar sua conta.")
+                    return
+                }
+
+                if (customersByDocument.get(normalizedCpfValue)) {
+                    setAuthError("CPF já cadastrado. Faça login com sua senha.")
+                    return
+                }
+
+                if (!supabaseReady || !supabase) {
+                    setAuthError("Serviço indisponível. Tente novamente em instantes.")
+                    return
+                }
+
+                const hashedSecret = await bcrypt.hash(clientData.password, 8)
+                const { data: createdCustomer, error: createCustomerError } = await supabase
+                    .from("customers")
+                    .insert({
+                        tenant_id: tenant.id,
+                        full_name: clientData.name,
+                        email: clientData.email,
+                        phone: clientData.phone,
+                        document: normalizedCpfValue,
+                        status: "active",
+                        loyalty_points: 0,
+                    })
+                    .select("id, tenant_id, full_name, email, phone, document, last_visit_at, total_spent, loyalty_points, status")
+                    .single()
+
+                if (createCustomerError || !createdCustomer) {
+                    console.error("[customers.insert]", createCustomerError?.message)
+                    setAuthError("Não foi possível criar seu perfil agora. Tente novamente.")
+                    return
+                }
+
+                const credentialPayload = [
+                    {
+                        tenant_id: tenant.id,
+                        customer_id: createdCustomer.id,
+                        identity_type: "cpf",
+                        identity_value: normalizedCpfValue,
+                        secret_hash: hashedSecret,
+                    },
+                ]
+
+                if (clientData.email) {
+                    credentialPayload.push({
+                        tenant_id: tenant.id,
+                        customer_id: createdCustomer.id,
+                        identity_type: "email",
+                        identity_value: clientData.email.toLowerCase(),
+                        secret_hash: hashedSecret,
+                    })
+                }
+
+                const { error: credentialError } = await supabase
+                    .from("customer_credentials")
+                    .insert(credentialPayload)
+
+                if (credentialError) {
+                    console.error("[customer_credentials.insert]", credentialError.message)
+                    setAuthError("Conta criada, mas não conseguimos salvar sua senha. Tente novamente.")
+                    return
+                }
+
+                const normalizedCustomer: ClientRecord = {
+                    id: createdCustomer.id,
+                    tenantId: tenant.id,
+                    name: createdCustomer.full_name,
+                    email: createdCustomer.email ?? "",
+                    phone: createdCustomer.phone ?? "",
+                    document: createdCustomer.document ?? undefined,
+                    lastVisit: createdCustomer.last_visit_at ?? new Date().toISOString(),
+                    totalSpent: Number(createdCustomer.total_spent ?? 0),
+                    status: (createdCustomer.status as ClientRecord["status"]) ?? "active",
+                    avatar: "",
+                    loyaltyPoints: createdCustomer.loyalty_points ?? undefined,
+                }
+
+                setClientData(prev => ({
+                    ...prev,
+                    name: normalizedCustomer.name,
+                    email: normalizedCustomer.email,
+                    phone: normalizedCustomer.phone,
+                    isExisting: true,
+                }))
+                setAuthenticatedCustomer(normalizedCustomer)
+                setIsAuthenticated(true)
+            }
+        } catch (error) {
+            console.error("[handleAuthentication]", error)
+            setAuthError("Não foi possível validar seus dados. Tente novamente.")
+        } finally {
+            setIsAuthenticating(false)
+        }
+    }
+
+    const handleWhatsAppContact = () => {
+        if (!whatsappUrl) return
+        window.open(whatsappUrl, "_blank")
+    }
 
     const isCpfReady = normalizeCpf(clientData.cpf).length === 11
 
-    const tenantServices = services.filter(s => s.tenantId === tenant.id)
-    const tenantEmployees = employees.filter(e => e.tenantId === tenant.id)
-    const suggestedCombos = useMemo(() => combos.filter(combo => combo.tenantId === tenant.id).slice(0, 2), [tenant.id])
+    const tenantServices = useMemo(() => {
+        if (!tenant) return serviceRecords
+        return serviceRecords.filter(service => service.tenantId === tenant.id)
+    }, [serviceRecords, tenant])
+
+    const tenantEmployees = useMemo(() => {
+        if (!tenant) return employeesWithSchedules
+        return employeesWithSchedules.filter(employee => employee.tenantId === tenant.id)
+    }, [employeesWithSchedules, tenant])
+
+    const suggestedCombos = useMemo(() => {
+        if (!tenant) return comboRecords.slice(0, 2)
+        return comboRecords.filter(combo => combo.tenantId === tenant.id).slice(0, 2)
+    }, [comboRecords, tenant])
+
+    const customersByDocument = useMemo(() => {
+        const map = new Map<string, ClientRecord>()
+        customerRecords.forEach(customer => {
+            if (customer.document) {
+                map.set(normalizeCpf(customer.document), customer)
+            }
+        })
+        return map
+    }, [customerRecords])
+
+    const customersByEmail = useMemo(() => {
+        const map = new Map<string, ClientRecord>()
+        customerRecords.forEach(customer => {
+            if (customer.email) {
+                map.set(customer.email.toLowerCase(), customer)
+            }
+        })
+        return map
+    }, [customerRecords])
+
+    useEffect(() => {
+        if (selectedService && !tenantServices.some(service => service.id === selectedService.id)) {
+            setSelectedService(null)
+        }
+    }, [tenantServices, selectedService])
+
+    useEffect(() => {
+        if (selectedEmployee && !tenantEmployees.some(employee => employee.id === selectedEmployee.id)) {
+            setSelectedEmployee(null)
+        }
+    }, [tenantEmployees, selectedEmployee])
 
     // Dynamic Slot Generation
     const timeSlots = useMemo(() => {
-        if (!selectedService || !selectedEmployee || !selectedDate) return []
+        if (!selectedService || !selectedEmployee || !selectedDate || !tenant) return []
 
         const slots: string[] = []
         const dayOfWeek = weekDayKeys[selectedDate.getDay()]
@@ -176,13 +522,15 @@ export default function BookingPage() {
 
         if (!employeeSchedule || employeeSchedule.length === 0) return []
 
-        // Simulation parameters
-        const intervalStep = 15 // minutes
-        const serviceTotalDuration = (selectedService.bufferBefore || 0) + selectedService.duration + (selectedService.bufferAfter || 0)
+        const intervalStep = 15
+        const serviceTotalDuration =
+            getServiceBuffer(selectedService, "bufferBefore") +
+            selectedService.durationMinutes +
+            getServiceBuffer(selectedService, "bufferAfter")
 
         employeeSchedule.forEach(shift => {
-            const [startH, startM] = shift.start.split(':').map(Number)
-            const [endH, endM] = shift.end.split(':').map(Number)
+            const [startH, startM] = shift.start.split(":").map(Number)
+            const [endH, endM] = shift.end.split(":").map(Number)
 
             let currentTime = new Date(selectedDate)
             currentTime.setHours(startH, startM, 0, 0)
@@ -191,35 +539,30 @@ export default function BookingPage() {
             endTime.setHours(endH, endM, 0, 0)
 
             while (currentTime.getTime() + serviceTotalDuration * 60000 <= endTime.getTime()) {
-                const slotTime = format(currentTime, 'HH:mm')
+                const slotTime = format(currentTime, "HH:mm")
 
-                // Check for conflicts
-                const isTaken = appointments.some(apt => {
-                    const aptStart = parseISO(apt.date)
-                    const [aptH, aptM] = apt.time.split(':').map(Number)
-                    aptStart.setHours(aptH, aptM, 0, 0)
+                const hasConflict = appointmentRecords.some(apt => {
+                    if (apt.tenantId !== tenant.id || !apt.startAt) return false
+                    const aptStart = new Date(apt.startAt)
+                    if (!isSameDay(aptStart, selectedDate)) return false
 
-                    const aptEnd = new Date(aptStart.getTime() + apt.duration * 60000)
+                    const aptDuration = apt.durationMinutes ?? selectedService.durationMinutes
+                    const aptEnd = apt.endAt ? new Date(apt.endAt) : new Date(aptStart.getTime() + aptDuration * 60000)
 
-                    // Target window
                     const targetStart = new Date(currentTime)
                     const targetEnd = new Date(currentTime.getTime() + serviceTotalDuration * 60000)
 
-                    // Overlap check
-                    const overlaps = (targetStart < aptEnd && targetEnd > aptStart)
-
+                    const overlaps = targetStart < aptEnd && targetEnd > aptStart
                     if (!overlaps) return false
 
-                    // If individual mode, only care about THIS professional
-                    if (tenant.schedulingType === 'individual') {
-                        return apt.staffId === selectedEmployee.id
+                    if (tenant.schedulingType === "individual") {
+                        return apt.employeeId === selectedEmployee.id
                     }
 
-                    // If shared mode, ANY appointment in the tenant is a conflict
-                    return apt.tenantId === tenant.id
+                    return true
                 })
 
-                if (!isTaken) {
+                if (!hasConflict) {
                     slots.push(slotTime)
                 }
 
@@ -228,7 +571,7 @@ export default function BookingPage() {
         })
 
         return slots
-    }, [selectedService, selectedEmployee, selectedDate, tenant.id, tenant.schedulingType])
+    }, [selectedService, selectedEmployee, selectedDate, tenant, appointmentRecords])
 
     const activeTime = selectedTime ?? (timeSlots[0] ?? null)
 
@@ -242,9 +585,7 @@ export default function BookingPage() {
             setStep('client_info')
         }
         else if (step === 'client_info') {
-            if (!isCpfReady) return;
-            if (clientData.isExisting && !clientData.password) return;
-            if (!clientData.isExisting && (!clientData.name || !clientData.email || !clientData.phone || !clientData.password)) return;
+            if (!isCpfReady || !isAuthenticated || !authenticatedCustomer) return
             setStep('confirmation')
         }
         else if (step === 'confirmation') setStep('payment')
@@ -256,6 +597,63 @@ export default function BookingPage() {
         else if (step === 'client_info') setStep('datetime')
         else if (step === 'confirmation') setStep('client_info')
         else if (step === 'payment') setStep('confirmation')
+    }
+
+    const handleConfirmBooking = async () => {
+        if (!tenant || !selectedService || !selectedEmployee || !selectedDate || !selectedTime || !authenticatedCustomer) {
+            return
+        }
+
+        if (!supabaseReady || !supabase) {
+            setStep('success')
+            return
+        }
+
+        setIsCompletingBooking(true)
+
+        try {
+            const [hour, minute] = selectedTime.split(":").map(Number)
+            const startDateTime = new Date(selectedDate)
+            startDateTime.setHours(hour, minute, 0, 0)
+
+            const totalDuration =
+                selectedService.durationMinutes +
+                getServiceBuffer(selectedService, "bufferBefore") +
+                getServiceBuffer(selectedService, "bufferAfter")
+
+            const endDateTime = new Date(startDateTime.getTime() + totalDuration * 60000)
+
+            const { error } = await supabase
+                .from("appointments")
+                .insert({
+                    tenant_id: tenant.id,
+                    service_id: selectedService.id,
+                    employee_id: selectedEmployee.id,
+                    customer_id: authenticatedCustomer.id,
+                    start_at: startDateTime.toISOString(),
+                    end_at: endDateTime.toISOString(),
+                    duration_minutes: selectedService.durationMinutes,
+                    price: selectedService.price,
+                    currency: selectedService.currency,
+                    status: "scheduled",
+                    channel: "public_portal",
+                    metadata: {
+                        payment_method: selectedPaymentMethod,
+                        booking_source: "booking_funnel",
+                    },
+                })
+
+            if (error) {
+                throw error
+            }
+
+            setStep('success')
+        } catch (error) {
+            console.error("[handleConfirmBooking]", error)
+            setAuthError("Não foi possível confirmar o agendamento. Tente novamente.")
+        } finally {
+            setIsCompletingBooking(false)
+        }
     }
 
     const containerVariants = {
@@ -461,9 +859,9 @@ export default function BookingPage() {
                         const isCompleted = index < currentIndex
                         const isCurrent = step === flowStep
                         return (
-                            <div
+                        <div
                                 key={flowStep}
-                                className={cn(
+                            className={cn(
                                     "rounded-2xl border bg-white/80 dark:bg-zinc-900/70 p-4 transition-all",
                                     isCompleted && "border-primary/40 shadow-lg shadow-primary/10",
                                     isCurrent && "ring-2 ring-primary/40",
@@ -479,7 +877,7 @@ export default function BookingPage() {
                                                 : isCurrent
                                                     ? "bg-primary/10 text-primary border-primary/20"
                                                     : "bg-white text-slate-400 border-slate-200 dark:bg-zinc-900 dark:border-zinc-800"
-                                        )}
+                            )}
                                     >
                                         <Icon className="w-5 h-5" />
                                     </div>
@@ -533,7 +931,7 @@ export default function BookingPage() {
                                         </div>
                                         <div className="mt-6 flex items-center justify-between">
                                             <div className="flex gap-4 text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">
-                                                <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {service.duration}m</span>
+                                                <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {service.durationMinutes}m</span>
                                                 <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" /> R$ {service.price}</span>
                                             </div>
                                             <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-colors">
@@ -650,23 +1048,23 @@ export default function BookingPage() {
                                             Nenhum horário disponível neste dia. Escolha outra data ou profissional.
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                                         {timeSlots.map(time => (
-                                                <Button
-                                                    key={time}
+                                            <Button
+                                                key={time}
                                                 variant={activeTime === time ? "default" : "outline"}
-                                                    onClick={() => setSelectedTime(time)}
-                                                    className={cn(
-                                                        "h-14 rounded-2xl font-bold transition-all",
+                                                onClick={() => setSelectedTime(time)}
+                                                className={cn(
+                                                    "h-14 rounded-2xl font-bold transition-all",
                                                     activeTime === time
-                                                            ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.05]"
-                                                            : "bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white hover:bg-slate-50"
-                                                    )}
-                                                >
-                                                    {time}
-                                                </Button>
-                                            ))}
-                                        </div>
+                                                        ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.05]"
+                                                        : "bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white hover:bg-slate-50"
+                                                )}
+                                            >
+                                                {time}
+                                            </Button>
+                                        ))}
+                                    </div>
                                     )}
                                 </div>
                             </div>
@@ -705,12 +1103,12 @@ export default function BookingPage() {
                                             onChange={(e) => {
                                                 const val = e.target.value
                                                 const normalized = normalizeCpf(val)
-                                                const existing = normalized.length === 11 ? findCustomerByCpf(normalized) : undefined
+                                                const existing = normalized.length === 11 ? customersByDocument.get(normalized) : undefined
                                                 setClientData((prev) => {
                                                     if (existing) {
                                                         return {
                                                             ...prev,
-                                                            cpf: val,
+                                                    cpf: val,
                                                             isExisting: true,
                                                             name: existing.name,
                                                             email: existing.email,
@@ -725,8 +1123,8 @@ export default function BookingPage() {
                                                             cpf: val,
                                                             isExisting: false,
                                                             name: "",
-                                                            email: "",
-                                                            phone: "",
+                                                            email: prev.email,
+                                                            phone: prev.phone,
                                                             password: ""
                                                         }
                                                     }
@@ -786,7 +1184,7 @@ export default function BookingPage() {
                                                             value={clientData.email}
                                                             onChange={(e) => {
                                                                 const val = e.target.value
-                                                                const existing = findCustomerByEmail(val)
+                                                                const existing = customersByEmail.get(val.toLowerCase())
                                                                 setClientData((prev) => {
                                                                     if (existing) {
                                                                         return {
@@ -794,7 +1192,7 @@ export default function BookingPage() {
                                                                             email: val,
                                                                             isExisting: true,
                                                                             name: existing.name,
-                                                                            cpf: existing.cpf,
+                                                                            cpf: existing.document ? formatCpfDisplay(existing.document) : prev.cpf,
                                                                             phone: existing.phone || prev.phone,
                                                                             password: ""
                                                                         }
@@ -842,6 +1240,74 @@ export default function BookingPage() {
                                         : "Com sua senha, você poderá consultar seu histórico e pontos de fidelidade a qualquer momento."}
                                 </p>
                             </Card>
+
+                            <Card className="p-6 rounded-[2rem] border border-slate-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900 space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                                        <ShieldCheck className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-slate-400">Portal do cliente</p>
+                                        <p className="text-lg font-black text-slate-900 dark:text-white">Login obrigatório antes de confirmar</p>
+                                    </div>
+                                </div>
+                                <p className="text-sm text-slate-500 dark:text-zinc-400">
+                                    Garantimos sua segurança e evitamos agendamentos falsos. Após o login, enviaremos confirmações, lembretes,
+                                    promoções e você terá acesso ao histórico completo no seu portal.
+                                </p>
+
+                                {authError && (
+                                    <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-rose-600 dark:text-rose-400 text-sm font-medium">
+                                        {authError}
+                                    </div>
+                                )}
+
+                                {isAuthenticated ? (
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold">
+                                            <CheckCircle2 className="w-5 h-5" />
+                                            Autenticado como {clientData.name || clientData.email}
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            className="rounded-full"
+                                            onClick={() => {
+                                                setIsAuthenticated(false)
+                                                setClientData(prev => ({ ...prev, password: "" }))
+                                            }}
+                                        >
+                                            Trocar cliente
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                                            <Button
+                                                className="rounded-2xl h-14 font-black"
+                                                disabled={!canSubmitAuthentication || isAuthenticating || !isCpfReady}
+                                                onClick={handleAuthentication}
+                                            >
+                                                {isAuthenticating
+                                                    ? "Validando dados..."
+                                                    : authMode === "login"
+                                                        ? "Entrar e continuar"
+                                                        : "Criar acesso e continuar"}
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                className="h-14 rounded-2xl text-slate-500 hover:text-primary"
+                                                onClick={handleWhatsAppContact}
+                                            >
+                                                Precisa de ajuda?
+                                            </Button>
+                                        </div>
+                                        <p className="text-xs text-slate-400 font-medium">
+                                            Ao se identificar, você aceita receber notificações sobre confirmações, alterações e promoções do seu salão favorito.
+                                        </p>
+                                    </div>
+                                )}
+                            </Card>
                         </motion.div>
                     )}
 
@@ -868,7 +1334,7 @@ export default function BookingPage() {
                                         <div className="space-y-1">
                                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Serviço</p>
                                             <p className="text-xl font-extrabold text-slate-900 dark:text-white">{selectedService?.name}</p>
-                                            <p className="text-slate-500 text-sm font-medium">{selectedService?.duration} minutos • R$ {selectedService?.price}</p>
+                                            <p className="text-slate-500 text-sm font-medium">{selectedService?.durationMinutes} minutos • R$ {selectedService?.price}</p>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Profissional</p>
@@ -931,38 +1397,38 @@ export default function BookingPage() {
                                 <p className="text-slate-500 dark:text-zinc-400">Como você prefere pagar pelo serviço?</p>
                             </div>
 
-                       <div className="grid grid-cols-1 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                         {PAYMENT_METHODS.map((method) => (
-                            <Card
-                                key={method.id}
+                                    <Card
+                                        key={method.id}
                                 onClick={() => setSelectedPaymentMethod(method.id)}
-                                className={cn(
-                                    "p-6 rounded-[2rem] border-2 transition-all cursor-pointer flex items-center justify-between group active:scale-[0.98]",
-                                    selectedPaymentMethod === method.id
-                                        ? "border-primary bg-primary/[0.03] shadow-lg shadow-primary/5"
-                                        : "border-transparent bg-white dark:bg-zinc-900 hover:border-slate-200 dark:hover:border-zinc-800 shadow-sm"
-                                )}
-                            >
-                                <div className="flex items-center gap-4">
+                                        className={cn(
+                                            "p-6 rounded-[2rem] border-2 transition-all cursor-pointer flex items-center justify-between group active:scale-[0.98]",
+                                            selectedPaymentMethod === method.id
+                                                ? "border-primary bg-primary/[0.03] shadow-lg shadow-primary/5"
+                                                : "border-transparent bg-white dark:bg-zinc-900 hover:border-slate-200 dark:hover:border-zinc-800 shadow-sm"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-4">
                                     <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center group-hover:scale-110 transition-transform text-slate-400">
                                         <method.icon className={cn(
                                             "w-6 h-6",
                                             selectedPaymentMethod === method.id ? "text-primary" : "text-slate-400"
                                         )} />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-slate-900 dark:text-white leading-tight">{method.label}</h4>
-                                        <p className="text-xs text-slate-500 dark:text-zinc-400">{method.description}</p>
-                                    </div>
-                                </div>
-                                <div className={cn(
-                                    "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-                                    selectedPaymentMethod === method.id ? "border-primary bg-primary" : "border-slate-200"
-                                )}>
-                                    {selectedPaymentMethod === method.id && <div className="w-2 h-2 bg-white rounded-full" />}
-                                </div>
-                            </Card>
-                        ))}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-900 dark:text-white leading-tight">{method.label}</h4>
+                                                <p className="text-xs text-slate-500 dark:text-zinc-400">{method.description}</p>
+                                            </div>
+                                        </div>
+                                        <div className={cn(
+                                            "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                            selectedPaymentMethod === method.id ? "border-primary bg-primary" : "border-slate-200"
+                                        )}>
+                                            {selectedPaymentMethod === method.id && <div className="w-2 h-2 bg-white rounded-full" />}
+                                        </div>
+                                    </Card>
+                                ))}
                             </div>
 
                             {selectedPaymentMethod === 'pix' && (
@@ -1003,7 +1469,7 @@ export default function BookingPage() {
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Serviço</p>
                                     <p className="text-sm font-semibold text-slate-900 dark:text-white">{selectedService?.name}</p>
-                                    <p className="text-xs text-slate-500">{selectedService?.duration} min • R$ {selectedService?.price}</p>
+                                    <p className="text-xs text-slate-500">{selectedService?.durationMinutes} min • R$ {selectedService?.price}</p>
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Profissional</p>
@@ -1082,18 +1548,15 @@ export default function BookingPage() {
                             (step === 'service' && !selectedService) ||
                             (step === 'professional' && !selectedEmployee) ||
                             (step === 'datetime' && (!selectedDate || !activeTime)) ||
-                            (step === 'client_info' && (
-                                !isCpfReady ||
-                                (clientData.isExisting
-                                    ? !clientData.password
-                                    : (!clientData.name || !clientData.email || !clientData.phone || !clientData.password))
-                            )) ||
-                            (step === 'payment' && !selectedPaymentMethod)
+                            (step === 'client_info' && (!isCpfReady || !isAuthenticated)) ||
+                            (step === 'payment' && (!selectedPaymentMethod || isCompletingBooking))
                         }
-                        onClick={step === 'payment' ? () => setStep('success') : handleNext}
+                        onClick={step === 'payment' ? handleConfirmBooking : handleNext}
                         className="w-full h-16 rounded-[1.5rem] bg-primary hover:bg-primary/90 text-white font-black text-xl shadow-2xl shadow-primary/30 group transition-all active:scale-[0.98]"
                     >
-                        {step === 'payment' ? 'Finalizar Agendamento' : 'Próximo Passo'}
+                        {step === 'payment'
+                            ? (isCompletingBooking ? "Confirmando..." : "Finalizar Agendamento")
+                            : 'Próximo Passo'}
                         <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
                     </Button>
                 </div>

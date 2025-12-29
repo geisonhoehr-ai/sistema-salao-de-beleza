@@ -8,5 +8,7 @@ export type ClientRecord = {
     totalSpent: number
     status: "active" | "inactive" | "churned"
     avatar: string
+    document?: string
+    loyaltyPoints?: number
 }
 

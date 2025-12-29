@@ -13,6 +13,7 @@ import type {
     EmployeeRecord,
     ProductRecord,
     ServiceRecord,
+    StaffAvailabilityRecord,
 } from "@/types/catalog"
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import { getInitials } from "@/lib/utils"
@@ -23,8 +24,10 @@ interface CustomerRow {
     full_name: string
     email: string | null
     phone: string | null
+    document: string | null
     last_visit_at: string | null
     total_spent: number | null
+    loyalty_points: number | null
     status: string | null
 }
 
@@ -54,6 +57,7 @@ interface EmployeeRow {
     status?: string | null
     accepts_online_booking?: boolean | null
     avatar_url?: string | null
+    settings?: Record<string, unknown> | null
 }
 
 interface AppointmentRow {
@@ -126,6 +130,16 @@ interface TenantRow {
     settings?: Record<string, string | undefined> | null
 }
 
+interface StaffAvailabilityRow {
+    id: string
+    tenant_id: string
+    employee_id: string
+    weekday: number
+    start_time: string
+    end_time: string
+    is_active: boolean | null
+}
+
 const defaultCurrency = "BRL"
 
 const castClientStatus = (status?: string | null): ClientRecord["status"] => {
@@ -141,10 +155,12 @@ const mapRowToClient = (row: CustomerRow): ClientRecord => ({
     name: row.full_name,
     email: row.email ?? "",
     phone: row.phone ?? "",
+    document: row.document ?? undefined,
     lastVisit: row.last_visit_at ?? new Date().toISOString(),
     totalSpent: Number(row.total_spent ?? 0),
     status: castClientStatus(row.status),
     avatar: "",
+    loyaltyPoints: row.loyalty_points ?? undefined,
 })
 
 const mapMockClient = (client: typeof clients[number]): ClientRecord => ({
@@ -153,10 +169,12 @@ const mapMockClient = (client: typeof clients[number]): ClientRecord => ({
     name: client.name,
     email: client.email,
     phone: client.phone,
+    document: client.cpf ?? undefined,
     lastVisit: client.lastVisit,
     totalSpent: client.totalSpent,
     status: castClientStatus(client.status),
     avatar: client.avatar ?? "",
+    loyaltyPoints: client.points,
 })
 
 const mapRowToService = (row: ServiceRow): ServiceRecord => ({
@@ -202,6 +220,11 @@ const mapRowToEmployee = (row: EmployeeRow): EmployeeRecord => ({
     status: row.status ?? "active",
     acceptsOnlineBooking: row.accepts_online_booking ?? undefined,
     avatarUrl: row.avatar_url ?? undefined,
+    specialties: Array.isArray((row.settings as { specialties?: unknown[] } | undefined)?.specialties)
+        ? ((row.settings as { specialties?: unknown[] }).specialties || []).filter(
+              (value): value is string => typeof value === "string"
+          )
+        : undefined,
 })
 
 const mapMockEmployee = (employee: typeof employeeMocks[number]): EmployeeRecord => ({
@@ -337,6 +360,41 @@ const mapMockCombo = (combo: typeof comboMocks[number]): ComboRecord => ({
     category: combo.category,
 })
 
+const weekdayLookup: Record<string, number> = {
+    sunday: 0,
+    monday: 1,
+    tuesday: 2,
+    wednesday: 3,
+    thursday: 4,
+    friday: 5,
+    saturday: 6,
+}
+
+const mapRowToStaffAvailability = (row: StaffAvailabilityRow): StaffAvailabilityRecord => ({
+    id: row.id,
+    tenantId: row.tenant_id,
+    employeeId: row.employee_id,
+    weekday: row.weekday,
+    startTime: row.start_time,
+    endTime: row.end_time,
+})
+
+const mapMockAvailability = (employee: typeof employeeMocks[number]): StaffAvailabilityRecord[] => {
+    return Object.entries(employee.workingHours ?? {}).flatMap(([weekday, slots]) => {
+        const weekdayIndex = weekdayLookup[weekday] ?? null
+        if (weekdayIndex === null) return []
+
+        return slots.map((slot, index) => ({
+            id: `${employee.id}-${weekday}-${index}`,
+            tenantId: employee.tenantId,
+            employeeId: employee.id,
+            weekday: weekdayIndex,
+            startTime: slot.start,
+            endTime: slot.end,
+        }))
+    })
+}
+
 export function useTenantCustomers(tenantId?: string) {
     const fallback = useMemo(() => {
         const normalized = clients.map(mapMockClient)
@@ -360,7 +418,7 @@ export function useTenantCustomers(tenantId?: string) {
 
         supabase
             .from("customers")
-            .select("id, tenant_id, full_name, email, phone, last_visit_at, total_spent, status")
+            .select("id, tenant_id, full_name, email, phone, document, last_visit_at, total_spent, loyalty_points, status")
             .eq("tenant_id", tenantId)
             .order("full_name", { ascending: true })
             .then(({ data: rows, error }) => {
@@ -469,7 +527,7 @@ export function useTenantEmployees(tenantId?: string) {
         async (supabase, currentTenantId) => {
             const { data, error } = await supabase
                 .from("employees")
-                .select("id, tenant_id, full_name, email, phone, role, color_tag, commission_rate, status, accepts_online_booking, avatar_url")
+                .select("id, tenant_id, full_name, email, phone, role, color_tag, commission_rate, status, accepts_online_booking, avatar_url, settings")
                 .eq("tenant_id", currentTenantId)
                 .order("full_name")
 
@@ -613,5 +671,36 @@ export function useTenantBySlug(slug?: string) {
     }, [slug, fallback])
 
     return { tenant, loading }
+}
+
+export function useTenantStaffAvailability(tenantId?: string) {
+    const fallback = useMemo(() => {
+        if (!tenantId) {
+            return employeeMocks.flatMap(mapMockAvailability)
+        }
+        return employeeMocks
+            .filter(employee => employee.tenantId === tenantId)
+            .flatMap(mapMockAvailability)
+    }, [tenantId])
+
+    return useTenantQuery<StaffAvailabilityRecord>(
+        tenantId,
+        async (supabase, currentTenantId) => {
+            const { data, error } = await supabase
+                .from("staff_availability")
+                .select("id, tenant_id, employee_id, weekday, start_time, end_time, is_active")
+                .eq("tenant_id", currentTenantId)
+                .eq("is_active", true)
+                .order("employee_id")
+
+            if (error) {
+                console.error("[useTenantStaffAvailability] ", error.message)
+                return null
+            }
+
+            return data?.map(mapRowToStaffAvailability) ?? null
+        },
+        fallback
+    )
 }
 

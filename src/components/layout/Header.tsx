@@ -159,19 +159,19 @@ export function Header() {
 
                 {/* Tenant & User Profile */}
                 <div className="relative">
-                    <button
-                        onClick={() => isSuperAdmin && setIsTenantMenuOpen(!isTenantMenuOpen)}
-                        className="flex items-center gap-3 p-1 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 hover:shadow-md transition-all group"
-                    >
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-xs font-black shadow-lg">
-                            {currentTenant.name.substring(0, 2).toUpperCase()}
-                        </div>
-                        <div className="text-left hidden lg:block pr-2">
-                            <p className="text-xs font-black text-slate-900 dark:text-white leading-none mb-1">{currentTenant.name}</p>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{isSuperAdmin ? 'Super Admin' : 'Administrador'}</p>
-                        </div>
-                        {isSuperAdmin && <ChevronDown className="w-4 h-4 text-slate-400 mr-2 group-hover:text-primary transition-colors" />}
-                    </button>
+                <button
+                    onClick={() => isSuperAdmin && setIsTenantMenuOpen(!isTenantMenuOpen)}
+                    className="flex items-center gap-3 p-1 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 hover:shadow-md transition-all group"
+                >
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-xs font-black shadow-lg">
+                        {currentTenant.name.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div className="text-left hidden lg:block pr-2">
+                        <p className="text-xs font-black text-slate-900 dark:text-white leading-none mb-1">{currentTenant.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{isSuperAdmin ? 'Super Admin' : 'Administrador'}</p>
+                    </div>
+                    {isSuperAdmin && <ChevronDown className="w-4 h-4 text-slate-400 mr-2 group-hover:text-primary transition-colors" />}
+                </button>
 
                     <AnimatePresence>
                         {isSuperAdmin && isTenantMenuOpen && (

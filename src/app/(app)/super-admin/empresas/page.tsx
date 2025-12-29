@@ -69,9 +69,9 @@ export default function EmpresasPage() {
 
     const filteredCompanies = companies
         .filter(company =>
-            company.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            company.email.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+        company.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        company.email.toLowerCase().includes(searchTerm.toLowerCase())
+    )
         .filter(company => statusFilter === "all" || company.status === statusFilter)
         .filter(company => planFilter === "all" || company.planId === planFilter)
         .sort((a, b) => activationScore(b) - activationScore(a))

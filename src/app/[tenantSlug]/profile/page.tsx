@@ -6,19 +6,21 @@ import { motion } from "framer-motion"
 import { format, parseISO, differenceInHours, isAfter, addHours } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import {
-    ChevronLeft,
-    Calendar,
-    Clock,
-    User,
-    MapPin,
-    ExternalLink,
-    Sparkles,
-    History,
-    ShieldCheck,
     AlertCircle,
     Bell,
+    Calendar,
+    ChevronLeft,
+    Clock,
+    ExternalLink,
+    History,
+    Lock,
+    MapPin,
+    ShieldCheck,
     ShoppingBag,
-    Lock
+    Sparkles,
+    Tag,
+    TrendingUp,
+    User
 } from "lucide-react"
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp"
 import { Button } from "@/components/ui/button"
@@ -29,6 +31,7 @@ import { tenants } from "@/mocks/tenants"
 import { appointments } from "@/mocks/data"
 import { services } from "@/mocks/services"
 import { mockCustomers, type Customer } from "@/mocks/customers"
+import { combos } from "@/mocks/combos"
 import { cn, getInitials } from "@/lib/utils"
 
 export default function CustomerProfilePage() {
@@ -111,6 +114,55 @@ export default function CustomerProfilePage() {
 
         return [...future.slice(0, 2), ...past.slice(0, 3)]
     }, [allAppointments])
+
+    const tenantCombos = useMemo(() => combos.filter(combo => combo.tenantId === tenant.id).slice(0, 3), [tenant.id])
+
+    const totalSpent = useMemo(() => {
+        return allAppointments.reduce((sum, apt) => {
+            const serviceInfo = services.find(service => service.id === apt.serviceId)
+            return sum + (serviceInfo?.price ?? 0)
+        }, 0)
+    }, [allAppointments])
+
+    const averageTicket = allAppointments.length > 0 ? totalSpent / allAppointments.length : 0
+
+    const favoriteServices = useMemo(() => {
+        const counts = new Map<string, { id: string; total: number; serviceName: string; lastDate: string }>()
+        allAppointments.forEach(apt => {
+            if (!apt.serviceId) return
+            const serviceInfo = services.find(service => service.id === apt.serviceId)
+            if (!serviceInfo) return
+            const existing = counts.get(apt.serviceId)
+            counts.set(apt.serviceId, {
+                id: apt.serviceId,
+                total: (existing?.total ?? 0) + 1,
+                serviceName: serviceInfo.name,
+                lastDate: apt.date
+            })
+        })
+        return Array.from(counts.values())
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 3)
+    }, [allAppointments])
+
+    const dependentProfiles = useMemo(() => [
+        { id: "dep-1", name: "Lívia", relation: "Filha", credits: 180, status: "Ativa" },
+        { id: "dep-2", name: "Marcos", relation: "Cônjuge", credits: 90, status: "Ativo" }
+    ], [])
+
+    const purchaseHistory = useMemo(() => [
+        { id: "ord-1", title: "Kit Nutri Glow", amount: 189.9, date: "2024-02-10", status: "Enviado" },
+        { id: "ord-2", title: "Gift Card R$ 300", amount: 300, date: "2024-01-28", status: "Utilizado" },
+        { id: "ord-3", title: "Combo Autocuidado", amount: 420, date: "2023-12-12", status: "Finalizado" }
+    ], [])
+
+    const walletSummary = {
+        credits: 260,
+        vouchers: [
+            { id: "cupom-1", label: "GLOW15", description: "15% OFF em combinações noturnas", expires: "15/03" },
+            { id: "cupom-2", label: "VIPSPA", description: "R$ 80 off na compra de um combo", expires: "30/03" }
+        ]
+    }
 
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
@@ -507,6 +559,169 @@ export default function CustomerProfilePage() {
                         {allAppointments.map(apt => <AppointmentCard key={apt.id} apt={apt} />)}
                     </TabsContent>
                 </Tabs>
+
+                <motion.div initial="hidden" animate="visible" variants={containerVariants} transition={{ delay: 0.1 }}>
+                    <div className="grid gap-6">
+                        <Card className="p-6 rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 space-y-5">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">Resumo financeiro</p>
+                                    <h3 className="text-2xl font-black text-slate-900 dark:text-white">Seu impacto no salão</h3>
+                                </div>
+                                <Badge variant="secondary" className="rounded-full text-[10px] uppercase tracking-widest flex items-center gap-1">
+                                    <TrendingUp className="w-3 h-3" /> +18% vs último trimestre
+                                </Badge>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="rounded-2xl border border-slate-100 dark:border-zinc-800 p-4">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total gasto</p>
+                                    <p className="text-3xl font-black text-slate-900 dark:text-white">R$ {totalSpent.toFixed(2)}</p>
+                                    <p className="text-xs text-slate-400">Últimos 12 meses</p>
+                                </div>
+                                <div className="rounded-2xl border border-slate-100 dark:border-zinc-800 p-4">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Ticket médio</p>
+                                    <p className="text-3xl font-black text-slate-900 dark:text-white">R$ {averageTicket.toFixed(2)}</p>
+                                    <p className="text-xs text-slate-400">Por serviço</p>
+                                </div>
+                            </div>
+                            {favoriteServices.length > 0 && (
+                                <div className="space-y-3">
+                                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-slate-400">Serviços queridinhos</p>
+                                    <div className="space-y-2">
+                                        {favoriteServices.map(service => (
+                                            <div key={service.id} className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-zinc-800 px-4 py-2">
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-900 dark:text-white">{service.serviceName}</p>
+                                                    <p className="text-xs text-slate-400">{service.total}x realizados</p>
+                                                </div>
+                                                <Badge variant="outline" className="rounded-full text-[10px] uppercase tracking-widest">
+                                                    favorito
+                                                </Badge>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </Card>
+
+                        <Card className="p-6 rounded-[2.5rem] border-none shadow-xl bg-gradient-to-br from-primary/10 via-primary/5 to-slate-50 dark:from-primary/20 dark:via-zinc-900 dark:to-zinc-900 space-y-5">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/70">Dependentes e presentes</p>
+                                    <h3 className="text-2xl font-black text-slate-900 dark:text-white">Controle quem pode usar seu saldo</h3>
+                                </div>
+                                <Button size="sm" variant="secondary" className="rounded-full h-10 px-4 font-bold text-[10px] uppercase tracking-widest" onClick={() => alert("Em breve: fluxo completo de dependentes")}>
+                                    Adicionar dependente
+                                </Button>
+                            </div>
+                            <div className="grid gap-3">
+                                {dependentProfiles.map(dep => (
+                                    <div key={dep.id} className="flex items-center justify-between rounded-2xl bg-white/70 dark:bg-zinc-900/80 px-4 py-3">
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-900 dark:text-white">{dep.name}</p>
+                                            <p className="text-xs text-slate-500">{dep.relation}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Saldo</p>
+                                            <p className="text-lg font-black text-primary">R$ {dep.credits}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="rounded-2xl border border-dashed border-primary/40 px-4 py-3 flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary/80">Vale presente ativo</p>
+                                    <p className="text-sm text-slate-600 dark:text-zinc-300">Envie créditos para alguém especial</p>
+                                </div>
+                                <Button variant="ghost" className="rounded-full text-primary font-bold" onClick={() => router.push(`/${tenantSlug}/shop`)}>
+                                    Comprar gift card
+                                </Button>
+                            </div>
+                        </Card>
+
+                        <Card className="p-6 rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 space-y-5">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">Carteira & Cupons</p>
+                                    <h3 className="text-2xl font-black text-slate-900 dark:text-white">Ative benefícios antes de pagar</h3>
+                                </div>
+                                <Badge variant="outline" className="rounded-full text-[10px] uppercase tracking-widest flex items-center gap-1">
+                                    <Tag className="w-3 h-3" /> 2 cupons
+                                </Badge>
+                            </div>
+                            <div className="rounded-2xl border border-slate-100 dark:border-zinc-800 p-4 flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Saldo BeautyCash</p>
+                                    <p className="text-3xl font-black text-slate-900 dark:text-white">R$ {walletSummary.credits}</p>
+                                </div>
+                                <Button variant="outline" className="rounded-full font-bold" onClick={() => alert("Integração com pagamento em andamento")}>
+                                    Adicionar saldo
+                                </Button>
+                            </div>
+                            <div className="space-y-3">
+                                {walletSummary.vouchers.map(voucher => (
+                                    <div key={voucher.id} className="rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 px-4 py-3 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-black text-slate-900 dark:text-white">{voucher.label}</p>
+                                            <p className="text-xs text-slate-400">{voucher.description}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Expira</p>
+                                            <p className="text-sm font-black text-primary">{voucher.expires}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+
+                        <Card className="p-6 rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 space-y-5">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">Minhas compras e vitrine</p>
+                                    <h3 className="text-2xl font-black text-slate-900 dark:text-white">Continue aproveitando seus favoritos</h3>
+                                </div>
+                                <Button variant="outline" className="rounded-full font-bold" onClick={() => router.push(`/${tenantSlug}/shop`)}>
+                                    Ver loja
+                                </Button>
+                            </div>
+                            <div className="space-y-3">
+                                {purchaseHistory.map(order => (
+                                    <div key={order.id} className="rounded-2xl border border-slate-100 dark:border-zinc-800 px-4 py-3 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-900 dark:text-white">{order.title}</p>
+                                            <p className="text-xs text-slate-400">{format(parseISO(order.date), "dd MMM", { locale: ptBR })} • {order.status}</p>
+                                        </div>
+                                        <p className="text-lg font-black text-slate-900 dark:text-white">R$ {order.amount.toFixed(2)}</p>
+                                    </div>
+                                ))}
+                            </div>
+                            {tenantCombos.length > 0 && (
+                                <div className="space-y-3">
+                                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-slate-400">Combos recomendados</p>
+                                    <div className="space-y-3">
+                                        {tenantCombos.map(combo => (
+                                            <div key={combo.id} className="rounded-2xl border border-slate-100 dark:border-zinc-800 p-4 flex flex-col gap-2">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="font-bold text-slate-900 dark:text-white">{combo.name}</p>
+                                                    <Badge className="rounded-full text-[10px] uppercase tracking-widest">R$ {combo.price}</Badge>
+                                                </div>
+                                                <p className="text-xs text-slate-500 line-clamp-2">{combo.description}</p>
+                                                <div className="flex flex-col sm:flex-row gap-2">
+                                                    <Button className="flex-1 rounded-2xl h-11" onClick={() => router.push(`/${tenantSlug}/book?combo=${combo.id}`)}>
+                                                        Usar cupom
+                                                    </Button>
+                                                    <Button variant="outline" className="flex-1 rounded-2xl h-11" onClick={() => router.push(`/${tenantSlug}/shop?highlight=${combo.id}`)}>
+                                                        Ver detalhes
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </Card>
+                    </div>
+                </motion.div>
             </main>
             <FloatingWhatsApp phone={tenant.whatsapp} tenantName={tenant.name} />
         </div>
