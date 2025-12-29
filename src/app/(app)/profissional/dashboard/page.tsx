@@ -117,7 +117,7 @@ export default function ProfissionalDashboard() {
                             )
                         })}
                         {timelineEvents.length === 0 && (
-                            <p classNames="text-sm text-muted-foreground">Sem compromissos para hoje.</p>
+                            <p className="text-sm text-muted-foreground">Sem compromissos para hoje.</p>
                         )}
                     </CardContent>
                 </Card>
