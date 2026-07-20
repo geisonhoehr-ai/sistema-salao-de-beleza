@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, memo } from "react"
+import { useMemo, memo, useState, useRef } from "react"
 import { format, isSameDay } from "date-fns"
 import { motion, AnimatePresence } from "framer-motion"
 import { Lock } from "lucide-react"
@@ -10,6 +10,7 @@ import type { EmployeeRecord, AppointmentRecord, ServiceRecord } from "@/types/c
 import type { GridSize } from "@/types/agenda"
 import { ROW_HEIGHTS, COLUMN_WIDTHS } from "@/types/agenda"
 import { AppointmentStatusMenu } from "./appointment-status-menu"
+import { AppointmentTooltip } from "./appointment-tooltip"
 
 // Generate time slots from 08:00 to 20:00 (13 slots total)
 // Trinks vai de 8h até 18h, mas deixamos até 20h para flexibilidade
@@ -72,6 +73,12 @@ export const AgendaGrid = memo(function AgendaGrid({
 
     // Converter altura de string para número (para cálculos)
     const rowHeightPx = parseInt(rowHeight)
+
+    // Estado de hover para tooltip
+    const [hoveredAppointmentId, setHoveredAppointmentId] = useState<string | null>(null)
+    const [hoveredCardRect, setHoveredCardRect] = useState<DOMRect | null>(null)
+    const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+    const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
     // Filtrar appointments para o dia atual
     const todayAppointments = useMemo(
@@ -238,19 +245,49 @@ export const AgendaGrid = memo(function AgendaGrid({
 
                                                 const isHighlighted = searchQuery && searchQuery.trim().length > 0
 
+                                                const isHovered = hoveredAppointmentId === apt.id
+                                                const currentEmployee = employees.find(e => e.id === apt.employeeId)
+
                                                 return (
                                                     <motion.div
                                                         key={apt.id}
+                                                        ref={(el) => {
+                                                            if (el) cardRefs.current.set(apt.id, el)
+                                                        }}
                                                         initial={{ scale: 0.9, opacity: 0 }}
-                                                        animate={{ scale: 1, opacity: apt.isBlocked ? 0.6 : 1 }}
-                                                        whileHover={apt.isBlocked ? {} : { scale: 1.02, y: -2 }}
+                                                        animate={{
+                                                            scale: isHovered ? 1.05 : 1,
+                                                            opacity: apt.isBlocked ? 0.6 : 1,
+                                                            zIndex: isHovered ? 40 : 'auto'
+                                                        }}
                                                         whileTap={apt.isBlocked ? {} : { scale: 0.98 }}
+                                                        transition={{ duration: 0.15 }}
                                                         className={cn(
-                                                            "absolute left-1 right-1 sm:left-2 sm:right-2 rounded-lg overflow-hidden shadow-md group active:shadow-lg touch-manipulation",
+                                                            "absolute left-1 right-1 sm:left-2 sm:right-2 rounded-lg overflow-visible shadow-md group active:shadow-lg touch-manipulation",
                                                             apt.isBlocked ? "cursor-not-allowed" : "cursor-pointer",
-                                                            isHighlighted && "ring-2 ring-yellow-400 ring-offset-2"
+                                                            isHighlighted && "ring-2 ring-yellow-400 ring-offset-2",
+                                                            isHovered && "shadow-2xl"
                                                         )}
                                                         onClick={() => !apt.isBlocked && onAppointmentClick?.(apt)}
+                                                        onMouseEnter={() => {
+                                                            if (!apt.isBlocked) {
+                                                                // Cancela timeout de esconder se existir
+                                                                if (hideTimeoutRef.current) {
+                                                                    clearTimeout(hideTimeoutRef.current)
+                                                                    hideTimeoutRef.current = null
+                                                                }
+                                                                setHoveredAppointmentId(apt.id)
+                                                                const rect = cardRefs.current.get(apt.id)?.getBoundingClientRect()
+                                                                if (rect) setHoveredCardRect(rect)
+                                                            }
+                                                        }}
+                                                        onMouseLeave={() => {
+                                                            // Delay para dar tempo de mover o mouse para o tooltip
+                                                            hideTimeoutRef.current = setTimeout(() => {
+                                                                setHoveredAppointmentId(null)
+                                                                setHoveredCardRect(null)
+                                                            }, 100)
+                                                        }}
                                                         title={apt.isBlocked ? "Dia fechado. Reabra o fechamento para editar." : undefined}
                                                         style={{
                                                             top: layout.top,
@@ -265,6 +302,27 @@ export const AgendaGrid = memo(function AgendaGrid({
                                                                 <Lock className="w-4 h-4 text-zinc-400" />
                                                             </div>
                                                         )}
+
+                                                        {/* Tooltip */}
+                                                        <AppointmentTooltip
+                                                            appointment={apt}
+                                                            employee={currentEmployee}
+                                                            isVisible={isHovered}
+                                                            cardRect={hoveredCardRect}
+                                                            onMouseEnter={() => {
+                                                                // Cancela timeout quando mouse entra no tooltip
+                                                                if (hideTimeoutRef.current) {
+                                                                    clearTimeout(hideTimeoutRef.current)
+                                                                    hideTimeoutRef.current = null
+                                                                }
+                                                            }}
+                                                            onMouseLeave={() => {
+                                                                // Esconde quando mouse sai do tooltip
+                                                                setHoveredAppointmentId(null)
+                                                                setHoveredCardRect(null)
+                                                            }}
+                                                        />
+
                                                         <div className="relative p-1.5 sm:p-2 flex flex-col h-full">
                                                             <div className="flex items-center justify-between gap-1 mb-0.5">
                                                                 <span className="text-[10px] font-semibold opacity-80">
