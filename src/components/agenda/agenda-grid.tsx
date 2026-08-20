@@ -346,10 +346,9 @@ export const AgendaGrid = memo(function AgendaGrid({
                                                             </p>
                                                             <div className="mt-auto pt-1">
                                                                 <AppointmentStatusMenu
-                                                                    appointment={apt}
-                                                                    onUpdateStatus={onUpdateStatus}
-                                                                    onCompleteAppointment={onCompleteAppointment}
                                                                     currentStatus={apt.status}
+                                                                    onStatusChange={(newStatus) => onUpdateStatus?.(apt.id, newStatus)}
+                                                                    onComplete={() => onCompleteAppointment?.(apt)}
                                                                     disabled={apt.isBlocked}
                                                                 />
                                                             </div>
