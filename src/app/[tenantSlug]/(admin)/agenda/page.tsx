@@ -15,6 +15,7 @@ import { EmployeeCarousel } from "@/components/agenda/employee-carousel"
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import type { AgendaFilters } from "@/types/agenda"
 import { DEFAULT_FILTERS } from "@/types/agenda"
+import { fromDatabaseString } from "@/lib/date-utils"
 
 type AppointmentView = AppointmentRecord & {
     service?: ServiceRecord
@@ -59,9 +60,12 @@ export default function AgendaPage() {
     const tenantAppointments = useMemo<AppointmentView[]>(() => (
         appointmentRecords.map((apt) => {
             const service = apt.serviceId ? serviceMap.get(apt.serviceId) : undefined
-            const startDate = new Date(apt.startAt)
+            const startDate = fromDatabaseString(apt.startAt)
             const duration = apt.durationMinutes ?? service?.durationMinutes ?? 60
-            const appointmentDate = startDate.toISOString().split('T')[0]
+            const year = startDate.getFullYear()
+            const month = String(startDate.getMonth() + 1).padStart(2, '0')
+            const day = String(startDate.getDate()).padStart(2, '0')
+            const appointmentDate = `${year}-${month}-${day}`
             const isBlocked = closedDates.has(appointmentDate)
             return {
                 ...apt,

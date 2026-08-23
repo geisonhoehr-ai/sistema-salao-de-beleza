@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useTenantCustomers, useTenantServices, useTenantEmployees } from "@/hooks/useTenantRecords"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import type { AppointmentRecord } from "@/types/catalog"
+import { toLocalISOString } from "@/lib/date-utils"
 
 interface NewAppointmentModalProps {
     isOpen: boolean
@@ -180,8 +181,8 @@ export function NewAppointmentModal({ isOpen, onClose, onSuccess, tenantId, appo
                 .select("id, start_at, end_at, notes")
                 .eq("employee_id", formData.employeeId)
                 .neq("status", "cancelled")
-                .lt("start_at", endAt.toISOString())
-                .gt("end_at", startAt.toISOString())
+                .lt("start_at", toLocalISOString(endAt))
+                .gt("end_at", toLocalISOString(startAt))
 
             if (isEditing && appointment) {
                 conflictQuery.neq("id", appointment.id)
@@ -203,8 +204,8 @@ export function NewAppointmentModal({ isOpen, onClose, onSuccess, tenantId, appo
             const payload: Record<string, unknown> = {
                 tenant_id: tenantId,
                 employee_id: formData.employeeId,
-                start_at: startAt.toISOString(),
-                end_at: endAt.toISOString(),
+                start_at: toLocalISOString(startAt),
+                end_at: toLocalISOString(endAt),
                 duration_minutes: duration,
                 price,
                 status: isBlocked ? "staff_unavailable" : "pending",

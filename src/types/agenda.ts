@@ -15,17 +15,17 @@ export interface AgendaFilters {
 }
 
 export const ROW_HEIGHTS: Record<GridSize, string> = {
-    PP: '40px',   // 20min por slot
-    P: '60px',    // 30min por slot
-    M: '80px',    // 40min por slot
-    G: '120px',   // 60min por slot (padrão)
+    PP: '40px',   // Extra compacto
+    P: '60px',    // Compacto
+    M: '80px',    // Médio - bom para 30min (40px)
+    G: '100px',   // Grande
 }
 
 export const COLUMN_WIDTHS: Record<GridSize, string> = {
-    PP: '120px',
+    PP: '140px',
     P: '160px',
-    M: '200px',  // padrão atual
-    G: '280px',
+    M: '180px',  // padrão atual
+    G: '220px',
 }
 
 export const DEFAULT_FILTERS: AgendaFilters = {
@@ -34,7 +34,7 @@ export const DEFAULT_FILTERS: AgendaFilters = {
     selectedStatuses: [],
     accountClosure: 'open',
     gridSize: {
-        row: 'G',
+        row: 'M',  // Médio - bom equilíbrio (70px)
         column: 'M',
     },
     showAbsences: true,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, memo } from "react"
+import { useMemo, memo, useState, useRef } from "react"
 import { format, isSameDay } from "date-fns"
 import { motion, AnimatePresence } from "framer-motion"
 import { Lock } from "lucide-react"
@@ -10,6 +10,7 @@ import type { EmployeeRecord, AppointmentRecord, ServiceRecord } from "@/types/c
 import type { GridSize } from "@/types/agenda"
 import { ROW_HEIGHTS, COLUMN_WIDTHS } from "@/types/agenda"
 import { AppointmentStatusMenu } from "./appointment-status-menu"
+import { AppointmentTooltip } from "./appointment-tooltip"
 
 // Generate time slots from 08:00 to 20:00 (13 slots total)
 // Trinks vai de 8h até 18h, mas deixamos até 20h para flexibilidade
@@ -73,6 +74,12 @@ export const AgendaGrid = memo(function AgendaGrid({
     // Converter altura de string para número (para cálculos)
     const rowHeightPx = parseInt(rowHeight)
 
+    // Estado de hover para tooltip
+    const [hoveredAppointmentId, setHoveredAppointmentId] = useState<string | null>(null)
+    const [hoveredCardRect, setHoveredCardRect] = useState<DOMRect | null>(null)
+    const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+    const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
     // Filtrar appointments para o dia atual
     const todayAppointments = useMemo(
         () => appointments.filter(apt => isSameDay(apt.startDate, currentDate)),
@@ -112,185 +119,250 @@ export const AgendaGrid = memo(function AgendaGrid({
         : -100
 
     return (
-        <div className="flex-1 flex overflow-y-auto overflow-x-hidden touch-pan-x">
-            {/* Coluna de horários - Escondida em mobile */}
-            {!isMobileView && (
-                <div
-                    className="border-r border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 sticky left-0 z-20"
-                    style={{ width: '60px' }}
-                >
-                    <div className="h-14 border-b border-slate-200 dark:border-zinc-800" />
-                <div className="overflow-y-auto">
-                    {timeSlots.map(hour => (
+        <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Headers Row - Sticky */}
+            <div className="flex border-b border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-30">
+                {/* Header vazio para coluna de horários */}
+                {!isMobileView && (
+                    <div className="w-14 border-r border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 flex-shrink-0" />
+                )}
+
+                {/* Headers dos profissionais */}
+                <div className="flex-1 flex overflow-x-auto scroll-smooth">
+                    {employees.map(employee => (
                         <div
-                            key={hour}
-                            className="flex flex-col items-center justify-start pt-2 sm:pt-3 border-b border-slate-200 dark:border-zinc-800 relative"
-                            style={{ height: rowHeight }}
+                            key={employee.id}
+                            className={cn(
+                                "border-r border-slate-200 dark:border-zinc-800 last:border-r-0 px-2 sm:px-3 flex items-center gap-1.5 sm:gap-2.5 h-14",
+                                isMobileView ? "w-full" : "flex-shrink-0"
+                            )}
+                            style={isMobileView ? {} : { width: '180px', minWidth: '180px' }}
                         >
-                            <span className="text-xs sm:text-sm font-bold text-foreground">
-                                {String(hour).padStart(2, '0')}:00
-                            </span>
-                            {/* Linha pontilhada na meia hora */}
-                            <div
-                                className="absolute left-0 right-0 border-t border-dashed border-slate-200 dark:border-zinc-700/50"
-                                style={{ top: '50%' }}
-                            />
+                            {employee.avatarUrl ? (
+                                <img
+                                    src={employee.avatarUrl}
+                                    alt={employee.fullName}
+                                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shadow-sm flex-shrink-0"
+                                />
+                            ) : (
+                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center font-bold text-xs sm:text-sm text-white shadow-sm flex-shrink-0">
+                                    {employee.fullName.charAt(0)}
+                                </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                                <p className="font-bold text-xs sm:text-sm truncate text-foreground">
+                                    {employee.fullName}
+                                </p>
+                                {employee.role && (
+                                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                                        {employee.role}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>
-                </div>
-            )}
+            </div>
 
-            {/* Grid de profissionais */}
-            <div className="flex-1 flex overflow-x-auto scroll-smooth">
-                <AnimatePresence mode="popLayout">
-                    {employees.map((employee, idx) => {
-                        const employeeAppointments = todayAppointments.filter(
-                            apt => apt.employeeId === employee.id
-                        )
-
-                        return (
-                            <motion.div
-                                key={employee.id}
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{ delay: idx * 0.05, duration: 0.4 }}
-                                className={cn(
-                                    "border-r border-slate-200 dark:border-zinc-800 last:border-r-0 relative",
-                                    isMobileView ? "w-full" : "flex-shrink-0"
-                                )}
-                                style={isMobileView ? {} : {
-                                    width: `min(160px, 100vw - 60px)`,
-                                    minWidth: '160px'
-                                }}
+            {/* Grid Area - Scroll container */}
+            <div className="flex-1 flex overflow-auto">
+                {/* Coluna de horários FIXA - Escondida em mobile */}
+                {!isMobileView && (
+                    <div className="w-14 border-r border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 flex-shrink-0">
+                        {timeSlots.map(hour => (
+                            <div
+                                key={hour}
+                                className="flex flex-col items-center justify-start pt-1 border-b border-slate-200 dark:border-zinc-800 relative"
+                                style={{ height: rowHeight }}
                             >
-                                {/* Header do profissional */}
-                                <div
-                                    className="h-14 border-b border-slate-200 dark:border-zinc-800 px-2 sm:px-3 flex items-center gap-1.5 sm:gap-2.5 bg-white dark:bg-zinc-900 sticky top-0 z-10"
+                                <span className="text-xs font-semibold text-foreground">
+                                    {String(hour).padStart(2, '0')}:00
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Grid de profissionais */}
+                <div className="flex-1 flex">
+                    <AnimatePresence mode="popLayout">
+                        {employees.map((employee, idx) => {
+                            const employeeAppointments = todayAppointments.filter(
+                                apt => apt.employeeId === employee.id
+                            )
+
+                            return (
+                                <motion.div
+                                    key={employee.id}
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    transition={{ delay: idx * 0.05, duration: 0.4 }}
+                                    className={cn(
+                                        "border-r border-slate-200 dark:border-zinc-800 last:border-r-0 relative",
+                                        isMobileView ? "w-full" : "flex-shrink-0"
+                                    )}
+                                    style={isMobileView ? {} : { width: '180px', minWidth: '180px' }}
                                 >
-                                    {employee.avatarUrl ? (
-                                        <img
-                                            src={employee.avatarUrl}
-                                            alt={employee.fullName}
-                                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shadow-sm flex-shrink-0"
-                                        />
-                                    ) : (
-                                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center font-bold text-xs sm:text-sm text-white shadow-sm flex-shrink-0">
-                                            {employee.fullName.charAt(0)}
-                                        </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-xs sm:text-sm truncate text-foreground">
-                                            {employee.fullName}
-                                        </p>
-                                        {employee.role && (
-                                            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                                                {employee.role}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Grid de horários */}
-                                <div className="relative">
-                                    {timeSlots.map(hour => (
-                                        <div
-                                            key={hour}
-                                            className="border-b border-slate-100 dark:border-zinc-800/50 relative hover:bg-slate-50 dark:hover:bg-zinc-900/30 transition-colors"
-                                            style={{ height: rowHeight }}
-                                        >
-                                            {/* Linha pontilhada na meia hora */}
+                                    {/* Grid de horários */}
+                                    <div className="relative">
+                                        {timeSlots.map(hour => (
                                             <div
-                                                className="absolute left-0 right-0 border-t border-dashed border-slate-200 dark:border-zinc-700/50"
-                                                style={{ top: '50%' }}
-                                            />
-                                        </div>
-                                    ))}
+                                                key={hour}
+                                                className="border-b border-slate-100 dark:border-zinc-800/50 relative hover:bg-slate-50 dark:hover:bg-zinc-900/30 transition-colors"
+                                                style={{ height: rowHeight }}
+                                            >
+                                                {/* Linha pontilhada na meia hora */}
+                                                <div
+                                                    className="absolute left-0 right-0 border-t border-dashed border-slate-200 dark:border-zinc-700/50"
+                                                    style={{ top: '50%' }}
+                                                />
+                                            </div>
+                                        ))}
 
-                                    {/* Indicador de hora atual */}
-                                    {isToday && currentIndicatorPos >= 0 && (
-                                        <motion.div
-                                            className="absolute left-0 right-0 z-10 pointer-events-none"
-                                            style={{ top: currentIndicatorPos }}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                        >
-                                            <div className="absolute left-0 w-2 h-2 -ml-1 -mt-1 rounded-full bg-red-500 border-2 border-white dark:border-zinc-900" />
-                                            <div className="h-0.5 w-full bg-red-500" />
-                                        </motion.div>
-                                    )}
+                                        {/* Indicador de hora atual */}
+                                        {isToday && currentIndicatorPos >= 0 && (
+                                            <motion.div
+                                                className="absolute left-0 right-0 z-10 pointer-events-none"
+                                                style={{ top: currentIndicatorPos }}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                            >
+                                                <div className="absolute left-0 w-2 h-2 -ml-1 -mt-1 rounded-full bg-red-500 border-2 border-white dark:border-zinc-900" />
+                                                <div className="h-0.5 w-full bg-red-500" />
+                                            </motion.div>
+                                        )}
 
-                                    {/* Cards de agendamento */}
-                                    <AnimatePresence>
-                                        {employeeAppointments.map(apt => {
-                                            const layout = getAppointmentLayout(apt)
-                                            const startLabel = format(apt.startDate, 'HH:mm')
-                                            const endTime = new Date(
-                                                apt.startDate.getTime() + apt.duration * 60000
-                                            )
-                                            const endLabel = format(endTime, 'HH:mm')
+                                        {/* Cards de agendamento */}
+                                        <AnimatePresence>
+                                            {employeeAppointments.map(apt => {
+                                                const layout = getAppointmentLayout(apt)
+                                                const startLabel = format(apt.startDate, 'HH:mm')
+                                                const endTime = new Date(
+                                                    apt.startDate.getTime() + apt.duration * 60000
+                                                )
+                                                const endLabel = format(endTime, 'HH:mm')
 
-                                            const isHighlighted = searchQuery && searchQuery.trim().length > 0
+                                                const isHighlighted = searchQuery && searchQuery.trim().length > 0
 
-                                            return (
-                                                <motion.div
-                                                    key={apt.id}
-                                                    initial={{ scale: 0.9, opacity: 0 }}
-                                                    animate={{ scale: 1, opacity: apt.isBlocked ? 0.6 : 1 }}
-                                                    whileHover={apt.isBlocked ? {} : { scale: 1.02, y: -2 }}
-                                                    whileTap={apt.isBlocked ? {} : { scale: 0.98 }}
-                                                    className={cn(
-                                                        "absolute left-1 right-1 sm:left-2 sm:right-2 rounded-lg sm:rounded-xl overflow-hidden shadow-lg group active:shadow-xl touch-manipulation",
-                                                        apt.isBlocked ? "cursor-not-allowed" : "cursor-pointer",
-                                                        isHighlighted && "ring-2 ring-yellow-400 ring-offset-2"
-                                                    )}
-                                                    onClick={() => !apt.isBlocked && onAppointmentClick?.(apt)}
-                                                    title={apt.isBlocked ? "Dia fechado. Reabra o fechamento para editar." : undefined}
-                                                    style={{
-                                                        top: layout.top,
-                                                        height: layout.height,
-                                                        minHeight: '44px',
-                                                        zIndex: isHighlighted ? 10 : 5,
-                                                    }}
-                                                >
-                                                    <div
-                                                        className="absolute inset-0 border-l-4 backdrop-blur-sm transition-all duration-300"
-                                                        style={getStatusStyles(apt.status)}
-                                                    />
+                                                const isHovered = hoveredAppointmentId === apt.id
+                                                const currentEmployee = employees.find(e => e.id === apt.employeeId)
 
-                                                    <div className="relative h-full flex flex-col p-2 sm:p-3 text-white">
-                                                        <div className="flex items-center justify-between gap-1 sm:gap-2 mb-0.5 sm:mb-1">
-                                                            <span className="text-[10px] sm:text-xs font-bold flex items-center gap-1">
-                                                                {apt.isBlocked && <Lock className="w-3 h-3" />}
-                                                                {startLabel} - {endLabel}
-                                                            </span>
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="h-4 sm:h-5 text-[9px] sm:text-[10px] font-bold px-1 sm:px-1.5 bg-white/90 border-none"
-                                                                style={{
-                                                                    color: getStatusColor(apt.status),
-                                                                }}
-                                                            >
-                                                                {apt.duration}m
-                                                            </Badge>
+                                                return (
+                                                    <motion.div
+                                                        key={apt.id}
+                                                        ref={(el) => {
+                                                            if (el) cardRefs.current.set(apt.id, el)
+                                                        }}
+                                                        initial={{ scale: 0.9, opacity: 0 }}
+                                                        animate={{
+                                                            scale: isHovered ? 1.05 : 1,
+                                                            opacity: apt.isBlocked ? 0.6 : 1,
+                                                            zIndex: isHovered ? 40 : 'auto'
+                                                        }}
+                                                        whileTap={apt.isBlocked ? {} : { scale: 0.98 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        className={cn(
+                                                            "absolute left-1 right-1 sm:left-2 sm:right-2 rounded-lg overflow-visible shadow-md group active:shadow-lg touch-manipulation",
+                                                            apt.isBlocked ? "cursor-not-allowed" : "cursor-pointer",
+                                                            isHighlighted && "ring-2 ring-yellow-400 ring-offset-2",
+                                                            isHovered && "shadow-2xl"
+                                                        )}
+                                                        onClick={() => !apt.isBlocked && onAppointmentClick?.(apt)}
+                                                        onMouseEnter={() => {
+                                                            if (!apt.isBlocked) {
+                                                                // Cancela timeout de esconder se existir
+                                                                if (hideTimeoutRef.current) {
+                                                                    clearTimeout(hideTimeoutRef.current)
+                                                                    hideTimeoutRef.current = null
+                                                                }
+                                                                setHoveredAppointmentId(apt.id)
+                                                                const rect = cardRefs.current.get(apt.id)?.getBoundingClientRect()
+                                                                if (rect) setHoveredCardRect(rect)
+                                                            }
+                                                        }}
+                                                        onMouseLeave={() => {
+                                                            // Delay para dar tempo de mover o mouse para o tooltip
+                                                            hideTimeoutRef.current = setTimeout(() => {
+                                                                setHoveredAppointmentId(null)
+                                                                setHoveredCardRect(null)
+                                                            }, 100)
+                                                        }}
+                                                        title={apt.isBlocked ? "Dia fechado. Reabra o fechamento para editar." : undefined}
+                                                        style={{
+                                                            top: layout.top,
+                                                            height: layout.height,
+                                                            ...getStatusStyles(apt.status),
+                                                            borderLeftWidth: '4px',
+                                                            borderLeftStyle: 'solid',
+                                                        }}
+                                                    >
+                                                        {apt.isBlocked && (
+                                                            <div className="absolute inset-0 bg-zinc-900/5 flex items-center justify-center">
+                                                                <Lock className="w-4 h-4 text-zinc-400" />
+                                                            </div>
+                                                        )}
+
+                                                        {/* Tooltip */}
+                                                        <AppointmentTooltip
+                                                            appointment={apt}
+                                                            employee={currentEmployee}
+                                                            isVisible={isHovered}
+                                                            cardRect={hoveredCardRect}
+                                                            onMouseEnter={() => {
+                                                                // Cancela timeout quando mouse entra no tooltip
+                                                                if (hideTimeoutRef.current) {
+                                                                    clearTimeout(hideTimeoutRef.current)
+                                                                    hideTimeoutRef.current = null
+                                                                }
+                                                            }}
+                                                            onMouseLeave={() => {
+                                                                // Esconde quando mouse sai do tooltip
+                                                                setHoveredAppointmentId(null)
+                                                                setHoveredCardRect(null)
+                                                            }}
+                                                        />
+
+                                                        <div className="relative p-1.5 sm:p-2 flex flex-col h-full">
+                                                            <div className="flex items-center justify-between gap-1 mb-0.5">
+                                                                <span className="text-[10px] font-semibold opacity-80">
+                                                                    {startLabel} - {endLabel}
+                                                                </span>
+                                                                <Badge
+                                                                    variant="secondary"
+                                                                    className="h-4 text-[9px] font-bold px-1 bg-white/90 border-none"
+                                                                    style={{
+                                                                        color: getStatusColor(apt.status),
+                                                                    }}
+                                                                >
+                                                                    {apt.duration}m
+                                                                </Badge>
+                                                            </div>
+                                                            <p className="font-bold text-xs mb-0.5 line-clamp-1">
+                                                                {apt.customerName ?? 'Cliente'}
+                                                            </p>
+                                                            <p className="text-[10px] font-medium opacity-90 line-clamp-1">
+                                                                {apt.service?.name ?? apt.serviceName ?? 'Serviço'}
+                                                            </p>
+                                                            <div className="mt-auto pt-1">
+                                                                <AppointmentStatusMenu
+                                                                    currentStatus={apt.status}
+                                                                    onStatusChange={(newStatus) => onUpdateStatus?.(apt.id, newStatus)}
+                                                                    onComplete={() => onCompleteAppointment?.(apt)}
+                                                                    disabled={apt.isBlocked}
+                                                                />
+                                                            </div>
                                                         </div>
-                                                        <p className="font-bold text-xs sm:text-sm mb-0.5 sm:mb-1 line-clamp-1">
-                                                            {apt.customerName ?? 'Cliente'}
-                                                        </p>
-                                                        <p className="text-[10px] sm:text-xs font-medium opacity-90 line-clamp-1">
-                                                            {apt.service?.name ?? apt.serviceName ?? 'Serviço'}
-                                                        </p>
-                                                    </div>
-                                                </motion.div>
-                                            )
-                                        })}
-                                    </AnimatePresence>
-                                </div>
-                            </motion.div>
-                        )
-                    })}
-                </AnimatePresence>
+                                                    </motion.div>
+                                                )
+                                            })}
+                                        </AnimatePresence>
+                                    </div>
+                                </motion.div>
+                            )
+                        })}
+                    </AnimatePresence>
+                </div>
             </div>
         </div>
     )
