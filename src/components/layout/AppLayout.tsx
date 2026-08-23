@@ -1,8 +1,8 @@
 "use client"
 
-import { ReactNode } from "react"
+import { ReactNode, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Home, CalendarDays, Wallet, User as UserIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/contexts/auth-context"
@@ -12,6 +12,7 @@ import { SuperAdminSidebar } from "./SuperAdminSidebar"
 import { Sidebar } from "./Sidebar"
 import { ProfessionalSidebar } from "./ProfessionalSidebar"
 import { Header } from "./Header"
+import { TrialBanner } from "./TrialBanner"
 
 interface AppLayoutProps {
     children: ReactNode
@@ -19,9 +20,30 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
     const { isSuperAdmin, user } = useAuth()
+    const { currentTenant } = useTenant()
     const pathname = usePathname()
+    const router = useRouter()
 
     const isEmployee = user?.role === 'employee'
+
+    // Check if trial has expired
+    useEffect(() => {
+        // Skip check for super admins and on trial-expired/pricing pages
+        if (isSuperAdmin || pathname === "/trial-expired" || pathname === "/pricing") {
+            return
+        }
+
+        // Check if trial expired and subscription is not active
+        if (currentTenant?.trialEndsAt && currentTenant.subscriptionStatus !== "active") {
+            const trialEnd = new Date(currentTenant.trialEndsAt)
+            const now = new Date()
+
+            if (now > trialEnd) {
+                // Trial expired, redirect to trial-expired page
+                router.push("/trial-expired")
+            }
+        }
+    }, [currentTenant, isSuperAdmin, pathname, router])
 
     // Desktop: Choose sidebar based on user role
     let SidebarComponent
@@ -38,6 +60,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <SidebarComponent />
             <div className="flex-1 flex flex-col w-full md:w-auto min-w-0">
                 <Header />
+                {!isSuperAdmin && <TrialBanner />}
                 <main className="flex-1 p-4 md:p-8 w-full overflow-x-hidden">
                     {children}
                 </main>

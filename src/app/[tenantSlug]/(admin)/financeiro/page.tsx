@@ -622,20 +622,6 @@ export default function FinancialPage() {
                                 <CardDescription>Como o cálculo deve ser feito.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                    <div className="space-y-0.5">
-                                        <label className="text-sm font-medium text-slate-900">Descontar taxas da base?</label>
-                                        <p className="text-xs text-slate-500">Se ativo, a comissão é calculada sobre o valor líquido.</p>
-                                    </div>
-                                    <div className="flex items-center h-5">
-                                        <input
-                                            type="checkbox"
-                                            checked={settings.deductFeesFromCommission}
-                                            onChange={(e) => updateSetting('deductFeesFromCommission', e.target.checked)}
-                                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
-                                        />
-                                    </div>
-                                </div>
                                 <div className="space-y-3">
                                     <div className="flex justify-between">
                                         <label className="text-sm font-medium text-slate-700">Comissão Padrão (%)</label>

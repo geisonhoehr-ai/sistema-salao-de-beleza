@@ -172,8 +172,8 @@ export default function LoginPage() {
                     <div className="mt-8 text-center space-y-4">
                         <p className="text-sm text-gray-600">
                             Não tem uma conta?{" "}
-                            <Link href="/" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
-                                Ver planos
+                            <Link href="/register" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                                Criar conta grátis
                             </Link>
                         </p>
                         <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
