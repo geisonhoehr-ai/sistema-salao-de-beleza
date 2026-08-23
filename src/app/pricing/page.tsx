@@ -201,7 +201,9 @@ export default function PricingPage() {
                                                 {plan.description}
                                             </p>
                                             <div className="mb-6">
-                                                <span className="text-4xl font-black text-gray-900 dark:text-white">
+                                                <span className={`font-black text-gray-900 dark:text-white ${
+                                                    plan.price === "Personalizado" ? "text-2xl" : "text-4xl"
+                                                }`}>
                                                     {plan.price}
                                                 </span>
                                                 {plan.period && (
