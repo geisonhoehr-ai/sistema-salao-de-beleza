@@ -4,7 +4,8 @@ import { Resend } from 'resend';
 const apiKey = process.env.RESEND_API_KEY || 're_123456789'; // Fallback preventing build crash if env is missing
 const resend = new Resend(apiKey);
 
-const FROM_EMAIL = 'Tratto <nao-responda@Tratto.app>';
+// TODO: Trocar para domínio próprio quando verificado no Resend
+const FROM_EMAIL = 'Tratto <onboarding@resend.dev>';
 
 export interface EmailPayload {
     to: string;
