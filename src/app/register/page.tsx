@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { ArrowRight, Building2, Mail, Lock, User, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -26,8 +26,10 @@ const BUSINESS_TYPES = [
     { value: "other", label: "Outro" },
 ]
 
-export default function RegisterPage() {
+function RegisterContent() {
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const isAdminMode = searchParams.get("admin") === "true"
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState("")
     const [formData, setFormData] = useState({
@@ -154,24 +156,29 @@ export default function RegisterPage() {
                 const baseSlug = generateSlug(formData.businessName)
                 const uniqueSlug = await ensureUniqueSlug(baseSlug)
 
+                const tenantData: Record<string, unknown> = {
+                    name: formData.businessName,
+                    slug: uniqueSlug,
+                    full_name: formData.businessName,
+                    settings: {
+                        business_type: formData.businessType,
+                        description: `${formData.businessName} - ${BUSINESS_TYPES.find(t => t.value === formData.businessType)?.label}`,
+                    },
+                    theme: {
+                        primaryColor: "#7c3aed",
+                        accentColor: "#a78bfa",
+                    },
+                    plan_id: isAdminMode ? "pro" : "trial",
+                    subscription_status: isAdminMode ? "active" : "trialing",
+                }
+
+                if (!isAdminMode) {
+                    tenantData.trial_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                }
+
                 const { data: tenant, error: tenantError } = await supabase
                     .from("tenants")
-                    .insert({
-                        name: formData.businessName,
-                        slug: uniqueSlug,
-                        full_name: formData.businessName,
-                        settings: {
-                            business_type: formData.businessType,
-                            description: `${formData.businessName} - ${BUSINESS_TYPES.find(t => t.value === formData.businessType)?.label}`,
-                        },
-                        theme: {
-                            primaryColor: "#7c3aed",
-                            accentColor: "#a78bfa",
-                        },
-                        plan_id: "trial",
-                        subscription_status: "trialing",
-                        trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                    })
+                    .insert(tenantData)
                     .select()
                     .single()
 
@@ -224,6 +231,7 @@ export default function RegisterPage() {
                     userName: formData.userName,
                     businessName: formData.businessName,
                     businessType: formData.businessType,
+                    isAdminMode: isAdminMode,
                 }
                 localStorage.setItem("pendingRegistration", JSON.stringify(pendingData))
 
@@ -421,5 +429,17 @@ export default function RegisterPage() {
                 </Card>
             </motion.div>
         </div>
+    )
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={
+            <div className="fixed inset-0 bg-white dark:bg-zinc-950 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+            </div>
+        }>
+            <RegisterContent />
+        </Suspense>
     )
 }

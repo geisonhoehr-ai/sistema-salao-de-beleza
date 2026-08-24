@@ -96,24 +96,30 @@ export default function AuthCallbackPage() {
                 const baseSlug = generateSlug(pendingData.businessName)
                 const uniqueSlug = await ensureUniqueSlug(baseSlug)
 
+                const isAdminMode = pendingData.isAdminMode === true
+                const tenantData: Record<string, unknown> = {
+                    name: pendingData.businessName,
+                    slug: uniqueSlug,
+                    full_name: pendingData.businessName,
+                    settings: {
+                        business_type: pendingData.businessType,
+                        description: `${pendingData.businessName} - ${BUSINESS_TYPES.find(t => t.value === pendingData.businessType)?.label}`,
+                    },
+                    theme: {
+                        primaryColor: "#7c3aed",
+                        accentColor: "#a78bfa",
+                    },
+                    plan_id: isAdminMode ? "pro" : "trial",
+                    subscription_status: isAdminMode ? "active" : "trialing",
+                }
+
+                if (!isAdminMode) {
+                    tenantData.trial_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                }
+
                 const { data: tenant, error: tenantError } = await supabase
                     .from("tenants")
-                    .insert({
-                        name: pendingData.businessName,
-                        slug: uniqueSlug,
-                        full_name: pendingData.businessName,
-                        settings: {
-                            business_type: pendingData.businessType,
-                            description: `${pendingData.businessName} - ${BUSINESS_TYPES.find(t => t.value === pendingData.businessType)?.label}`,
-                        },
-                        theme: {
-                            primaryColor: "#7c3aed",
-                            accentColor: "#a78bfa",
-                        },
-                        plan_id: "trial",
-                        subscription_status: "trialing",
-                        trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                    })
+                    .insert(tenantData)
                     .select()
                     .single()
 
