@@ -239,17 +239,17 @@ export default function FechamentoPage() {
             {/* Cabeçalho */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Fechamento do Dia</h1>
-                    <p className="text-slate-500 text-lg">Confira, totalize e feche o caixa do dia.</p>
+                    <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight">Fechamento do Dia</h1>
+                    <p className="text-[#64748b] text-lg">Confira, totalize e feche o caixa do dia.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <input
                         type="date"
                         value={selectedDate}
                         onChange={e => setSelectedDate(e.target.value)}
-                        className="rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-slate-900 dark:text-white"
+                        className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#0F172A] focus:border-[#0D9488] focus:ring-[#0D9488]"
                     />
-                    <Button variant="outline" size="icon" onClick={fetchDayData} disabled={loadingDay}>
+                    <Button variant="outline" size="icon" onClick={fetchDayData} disabled={loadingDay} className="border-[#E2E8F0] hover:bg-[#F8F9FF]">
                         {loadingDay ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                     </Button>
                 </div>
@@ -258,7 +258,7 @@ export default function FechamentoPage() {
             {/* Status do dia */}
             <div className="flex items-center gap-3">
                 {isClosed ? (
-                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1 text-sm">
+                    <Badge className="bg-[#0D9488]/10 text-[#0D9488] border-[#0D9488]/20 gap-1.5 px-3 py-1 text-sm">
                         <CheckCircle2 className="w-4 h-4" />
                         Fechado em {existingClosing?.closedAt
                             ? new Date(existingClosing.closedAt).toLocaleString("pt-BR")
@@ -275,18 +275,18 @@ export default function FechamentoPage() {
             {/* Cards de resumo */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {[
-                    { label: "Atendimentos", value: summary.totalAppointments, currency: false, color: "text-slate-900 dark:text-white" },
-                    { label: "Faturamento Bruto", value: summary.grossRevenue, currency: true, color: "text-slate-900 dark:text-white" },
+                    { label: "Atendimentos", value: summary.totalAppointments, currency: false, color: "text-[#0F172A]" },
+                    { label: "Faturamento Bruto", value: summary.grossRevenue, currency: true, color: "text-[#0F172A]" },
                     { label: "Descontos", value: summary.totalDiscounts, currency: true, color: "text-red-500" },
-                    { label: "Líquido (Caixa)", value: summary.netRevenue, currency: true, color: "text-emerald-600" },
+                    { label: "Líquido (Caixa)", value: summary.netRevenue, currency: true, color: "text-[#0D9488]" },
                     { label: "Comissões", value: summary.totalCommissions, currency: true, color: "text-blue-600" },
                 ].map(card => (
-                    <Card key={card.label} className="border-none shadow-sm bg-white dark:bg-zinc-900">
+                    <Card key={card.label} className="border border-[#E2E8F0] shadow-sm bg-white rounded-xl">
                         <CardContent className="pt-4 pb-4">
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">{card.label}</p>
-                            <p className={`text-xl font-black ${card.color}`}>
+                            <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide mb-1">{card.label}</p>
+                            <p className={`text-xl font-bold ${card.color}`}>
                                 {loadingDay
-                                    ? <span className="inline-block w-16 h-5 bg-slate-100 animate-pulse rounded" />
+                                    ? <span className="inline-block w-16 h-5 bg-[#F1F5F9] animate-pulse rounded" />
                                     : card.currency
                                         ? formatCurrency(card.value as number)
                                         : card.value

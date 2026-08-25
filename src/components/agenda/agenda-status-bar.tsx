@@ -26,46 +26,53 @@ interface AgendaStatusBarProps {
     onShowCancelledChange: (show: boolean) => void
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; status?: AppointmentStatus }> = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; selectedBg: string; status?: AppointmentStatus }> = {
     all: {
         label: "Todos",
-        color: "text-slate-700 dark:text-slate-300",
-        bgColor: "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700",
+        color: "text-[#64748b]",
+        bgColor: "bg-white border-[#E2E8F0]",
+        selectedBg: "bg-[#0F172A] text-white border-[#0F172A]",
     },
     pending: {
         label: "Aguardando",
-        color: "text-yellow-700 dark:text-yellow-300",
-        bgColor: "bg-yellow-100/80 dark:bg-yellow-900/30 hover:bg-yellow-200/80 dark:hover:bg-yellow-900/50",
+        color: "text-amber-700",
+        bgColor: "bg-white border-[#E2E8F0] hover:border-amber-300",
+        selectedBg: "bg-amber-100 border-amber-400 text-amber-800",
         status: "pending" as AppointmentStatus,
     },
     confirmed: {
         label: "Confirmado",
-        color: "text-blue-700 dark:text-blue-300",
-        bgColor: "bg-blue-100/80 dark:bg-blue-900/30 hover:bg-blue-200/80 dark:hover:bg-blue-900/50",
+        color: "text-blue-700",
+        bgColor: "bg-white border-[#E2E8F0] hover:border-blue-300",
+        selectedBg: "bg-blue-100 border-blue-400 text-blue-800",
         status: "confirmed" as AppointmentStatus,
     },
     in_progress: {
         label: "Em atendimento",
-        color: "text-purple-700 dark:text-purple-300",
-        bgColor: "bg-purple-100/80 dark:bg-purple-900/30 hover:bg-purple-200/80 dark:hover:bg-purple-900/50",
+        color: "text-purple-700",
+        bgColor: "bg-white border-[#E2E8F0] hover:border-purple-300",
+        selectedBg: "bg-purple-100 border-purple-400 text-purple-800",
         status: "in_progress" as AppointmentStatus,
     },
     completed: {
         label: "Finalizado",
-        color: "text-green-700 dark:text-green-300",
-        bgColor: "bg-green-100/80 dark:bg-green-900/30 hover:bg-green-200/80 dark:hover:bg-green-900/50",
+        color: "text-emerald-700",
+        bgColor: "bg-white border-[#E2E8F0] hover:border-emerald-300",
+        selectedBg: "bg-emerald-100 border-emerald-400 text-emerald-800",
         status: "completed" as AppointmentStatus,
     },
     cancelled: {
         label: "Cancelado",
-        color: "text-red-700 dark:text-red-300",
-        bgColor: "bg-red-100/80 dark:bg-red-900/30 hover:bg-red-200/80 dark:hover:bg-red-900/50",
+        color: "text-red-700",
+        bgColor: "bg-white border-[#E2E8F0] hover:border-red-300",
+        selectedBg: "bg-red-100 border-red-400 text-red-800",
         status: "cancelled" as AppointmentStatus,
     },
     no_show: {
         label: "Não compareceu",
-        color: "text-orange-700 dark:text-orange-300",
-        bgColor: "bg-orange-100/80 dark:bg-orange-900/30 hover:bg-orange-200/80 dark:hover:bg-orange-900/50",
+        color: "text-orange-700",
+        bgColor: "bg-white border-[#E2E8F0] hover:border-orange-300",
+        selectedBg: "bg-orange-100 border-orange-400 text-orange-800",
         status: "no_show" as AppointmentStatus,
     },
 }
@@ -107,9 +114,9 @@ export const AgendaStatusBar = memo(function AgendaStatusBar({
     }
 
     return (
-        <div className="border-b border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-                {/* Filtros de Status */}
+        <div className="border-b border-[#E2E8F0] bg-[#F8F9FF] px-4 py-3">
+            {/* Status Filters */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
                 {Object.entries(STATUS_CONFIG).map(([key, config]) => {
                     const count = statusCounts[key as keyof StatusCount]
                     const selected = isStatusSelected(key)
@@ -120,37 +127,39 @@ export const AgendaStatusBar = memo(function AgendaStatusBar({
                             variant="outline"
                             onClick={() => toggleStatus(key)}
                             className={cn(
-                                "cursor-pointer transition-all text-xs px-2 py-1 font-medium",
-                                config.color,
-                                selected ? config.bgColor : "bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800",
-                                selected && "ring-2 ring-offset-1 ring-slate-300 dark:ring-slate-600"
+                                "cursor-pointer transition-all text-xs px-2.5 py-1 font-medium border",
+                                selected ? config.selectedBg : config.bgColor,
+                                !selected && config.color
                             )}
                         >
                             {config.label}
-                            <span className="ml-1.5 font-bold">{count}</span>
+                            <span className="ml-1.5 font-semibold">{count}</span>
                         </Badge>
                     )
                 })}
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-                {/* Totalizador de Receita */}
-                <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Receita do dia:</span>
-                    <span className="font-bold text-green-700 dark:text-green-400">
-                        {formatCurrency(todayRevenue)}
-                    </span>
+            {/* Bottom row: Revenue + Toggle */}
+            <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
+                {/* Revenue */}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-md border border-[#E2E8F0]">
+                        <span className="text-[#64748b] text-xs">Receita hoje:</span>
+                        <span className="font-semibold text-[#0D9488]">
+                            {formatCurrency(todayRevenue)}
+                        </span>
+                    </div>
                 </div>
 
-                {/* Toggle Cancelados */}
+                {/* Toggle Cancelled */}
                 <div className="flex items-center gap-2">
                     <Switch
                         id="show-cancelled"
                         checked={showCancelled}
                         onCheckedChange={onShowCancelledChange}
-                        className="data-[state=checked]:bg-[#FF7A00]"
+                        className="data-[state=checked]:bg-[#0D9488]"
                     />
-                    <Label htmlFor="show-cancelled" className="text-xs cursor-pointer">
+                    <Label htmlFor="show-cancelled" className="text-xs text-[#64748b] cursor-pointer">
                         Mostrar cancelados
                     </Label>
                 </div>

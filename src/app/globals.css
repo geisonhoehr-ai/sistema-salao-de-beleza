@@ -4,70 +4,86 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    /* Pure White */
-    --foreground: 240 10% 3.9%;
-    /* Jet Black */
+    /* Tratto Design System - Modern Corporate / Precision Minimalism */
+    --background: 229 100% 99%;
+    /* Surface #F8F9FF */
+    --foreground: 222 47% 11%;
+    /* Charcoal #0F172A */
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    /* Pure white for cards */
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 262 83% 58%;
-    /* Violet 500 - Sophisticated */
-    --primary-foreground: 210 40% 98%;
+    --primary: 222 47% 11%;
+    /* Charcoal #0F172A - Primary actions */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 4.8% 95.9%;
-    /* Light Gray */
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: 175 84% 32%;
+    /* Teal #0D9488 - Accent color */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: 220 71% 95%;
+    /* Surface-dim light */
+    --muted-foreground: 222 9% 46%;
 
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 175 84% 32%;
+    /* Teal #0D9488 */
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 262 83% 58%;
+    --border: 214 32% 91%;
+    /* #E2E8F0 */
+    --input: 214 32% 91%;
+    --ring: 175 84% 32%;
+    /* Teal for focus */
 
-    --radius: 1rem;
-    /* Apple-style large radius */
+    --radius: 0.5rem;
+    /* 8px - Professional radius */
+
+    /* Status colors */
+    --status-confirmed: 142 76% 36%;
+    --status-pending: 45 93% 47%;
+    --status-cancelled: 0 84% 60%;
+    --status-completed: 217 91% 60%;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    /* Tratto Dark Mode */
+    --background: 222 47% 6%;
+    /* Deep charcoal */
+    --foreground: 220 14% 96%;
 
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 222 47% 9%;
+    --card-foreground: 220 14% 96%;
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 220 14% 96%;
 
-    --primary: 262 83% 58%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 0 0% 100%;
+    /* White in dark mode */
+    --primary-foreground: 222 47% 11%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 175 84% 32%;
+    /* Teal stays the same */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 222 30% 15%;
+    --muted-foreground: 220 14% 65%;
 
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 175 84% 32%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 262 83% 58%;
+    --border: 222 30% 18%;
+    --input: 222 30% 18%;
+    --ring: 175 84% 32%;
   }
 }
 

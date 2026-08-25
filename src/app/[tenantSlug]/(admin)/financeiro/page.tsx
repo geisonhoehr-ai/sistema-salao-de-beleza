@@ -296,16 +296,16 @@ export default function FinancialPage() {
         <div className="space-y-8 p-8 max-w-[1600px] mx-auto pb-32">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Financeiro Inteligente</h1>
-                    <p className="text-slate-500 text-lg">Seu lucro blindado com cálculo automático de taxas.</p>
+                    <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight">Financeiro Inteligente</h1>
+                    <p className="text-[#64748b] text-lg">Seu lucro blindado com cálculo automático de taxas.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-zinc-800 p-1 rounded-lg">
+                    <div className="flex items-center gap-2 bg-[#F1F5F9] p-1 rounded-lg">
                         <Button
                             size="sm"
                             variant={selectedPeriod === 'today' ? 'default' : 'ghost'}
                             onClick={() => setSelectedPeriod('today')}
-                            className="h-8"
+                            className={`h-8 ${selectedPeriod === 'today' ? 'bg-[#0F172A] text-white' : ''}`}
                         >
                             Hoje
                         </Button>
@@ -313,7 +313,7 @@ export default function FinancialPage() {
                             size="sm"
                             variant={selectedPeriod === 'week' ? 'default' : 'ghost'}
                             onClick={() => setSelectedPeriod('week')}
-                            className="h-8"
+                            className={`h-8 ${selectedPeriod === 'week' ? 'bg-[#0F172A] text-white' : ''}`}
                         >
                             Semana
                         </Button>
@@ -321,12 +321,12 @@ export default function FinancialPage() {
                             size="sm"
                             variant={selectedPeriod === 'month' ? 'default' : 'ghost'}
                             onClick={() => setSelectedPeriod('month')}
-                            className="h-8"
+                            className={`h-8 ${selectedPeriod === 'month' ? 'bg-[#0F172A] text-white' : ''}`}
                         >
                             Mês
                         </Button>
                     </div>
-                    <Button className="gap-2 bg-slate-900 text-white hover:bg-slate-800">
+                    <Button className="gap-2 bg-[#0F172A] text-white hover:bg-[#1e293b]">
                         <Download className="w-4 h-4" />
                         Relatório DRE
                     </Button>
@@ -335,66 +335,66 @@ export default function FinancialPage() {
 
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-none text-white shadow-xl">
+                <Card className="bg-[#0F172A] border-none text-white shadow-md rounded-xl">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-300">Faturamento Bruto</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-emerald-400" />
+                        <CardTitle className="text-sm font-medium text-[#94a3b8]">Faturamento Bruto</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-[#0D9488]" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{formatCurrency(stats.revenue)}</div>
-                        <p className="text-xs text-slate-400 mt-1">Total passado na maquininha</p>
+                        <p className="text-xs text-[#64748b] mt-1">Total passado na maquininha</p>
                     </CardContent>
                 </Card>
-                <Card className="bg-white dark:bg-zinc-900 shadow-sm border-l-4 border-l-red-500">
+                <Card className="bg-white shadow-sm border border-[#E2E8F0] border-l-4 border-l-red-500 rounded-xl">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-500">Comissões & Despesas</CardTitle>
+                        <CardTitle className="text-sm font-medium text-[#64748b]">Comissões & Despesas</CardTitle>
                         <Users className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(stats.expenses)}</div>
-                        <p className="text-xs text-slate-400 mt-1">Sai do seu caixa</p>
+                        <div className="text-2xl font-bold text-[#0F172A]">{formatCurrency(stats.expenses)}</div>
+                        <p className="text-xs text-[#64748b] mt-1">Sai do seu caixa</p>
                     </CardContent>
                 </Card>
-                <Card className="bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900 shadow-sm">
+                <Card className="bg-[#0D9488]/10 border border-[#0D9488]/20 shadow-sm rounded-xl">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Lucro Real (Líquido)</CardTitle>
-                        <Wallet className="h-4 w-4 text-emerald-600" />
+                        <CardTitle className="text-sm font-medium text-[#0D9488]">Lucro Real (Líquido)</CardTitle>
+                        <Wallet className="h-4 w-4 text-[#0D9488]" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{formatCurrency(stats.profit)}</div>
-                        <p className="text-xs text-emerald-600/80 mt-1">O que sobra no seu bolso ({stats.profitMargin}%)</p>
+                        <div className="text-2xl font-bold text-[#0D9488]">{formatCurrency(stats.profit)}</div>
+                        <p className="text-xs text-[#0D9488]/80 mt-1">O que sobra no seu bolso ({stats.profitMargin}%)</p>
                     </CardContent>
                 </Card>
-                <Card className="bg-white dark:bg-zinc-900 shadow-sm border-l-4 border-l-amber-500">
+                <Card className="bg-white shadow-sm border border-[#E2E8F0] border-l-4 border-l-amber-500 rounded-xl">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-500">Previsão Futura</CardTitle>
+                        <CardTitle className="text-sm font-medium text-[#64748b]">Previsão Futura</CardTitle>
                         <AlertCircle className="h-4 w-4 text-amber-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(stats.pending)}</div>
-                        <p className="text-xs text-slate-400 mt-1">Agendado para próxima semana</p>
+                        <div className="text-2xl font-bold text-[#0F172A]">{formatCurrency(stats.pending)}</div>
+                        <p className="text-xs text-[#64748b] mt-1">Agendado para próxima semana</p>
                     </CardContent>
                 </Card>
             </div>
 
             <Tabs defaultValue="commissions" className="space-y-6">
-                <TabsList className="bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl flex-wrap">
-                    <TabsTrigger value="commissions" className="flex-1 min-w-[180px] rounded-lg gap-2 data-[state=active]:bg-white">
+                <TabsList className="bg-[#F1F5F9] p-1 rounded-lg flex-wrap">
+                    <TabsTrigger value="commissions" className="flex-1 min-w-[180px] rounded-md gap-2 data-[state=active]:bg-white data-[state=active]:text-[#0F172A] data-[state=active]:shadow-sm">
                         <Users className="w-4 h-4" />
                         Pagamento de Comissões
                     </TabsTrigger>
-                    <TabsTrigger value="history" className="flex-1 min-w-[180px] rounded-lg gap-2 data-[state=active]:bg-white">
+                    <TabsTrigger value="history" className="flex-1 min-w-[180px] rounded-md gap-2 data-[state=active]:bg-white data-[state=active]:text-[#0F172A] data-[state=active]:shadow-sm">
                         <History className="w-4 h-4" />
                         Histórico de Pagamentos
                     </TabsTrigger>
-                    <TabsTrigger value="settings" className="flex-1 min-w-[180px] rounded-lg gap-2 data-[state=active]:bg-white">
+                    <TabsTrigger value="settings" className="flex-1 min-w-[180px] rounded-md gap-2 data-[state=active]:bg-white data-[state=active]:text-[#0F172A] data-[state=active]:shadow-sm">
                         <Percent className="w-4 h-4" />
                         Configurar Taxas
                     </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="commissions">
-                    <Card className="border-none shadow-lg bg-white dark:bg-zinc-900">
+                    <Card className="border border-[#E2E8F0] shadow-sm bg-white rounded-xl">
                         <CardHeader>
                             <div className="flex justify-between items-start gap-4">
                                 <div className="flex-1">
@@ -514,7 +514,7 @@ export default function FinancialPage() {
                                                             size="sm"
                                                             onClick={() => handlePayCommission(comm.id, comm.name)}
                                                             disabled={!isPeriodClosed}
-                                                            className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            className="rounded-lg bg-[#0D9488] hover:bg-[#0F766E] text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                                             title={!isPeriodClosed ? "Feche o período antes de pagar" : "Pagar comissão"}
                                                         >
                                                             Pagar
@@ -531,7 +531,7 @@ export default function FinancialPage() {
                 </TabsContent>
 
                 <TabsContent value="history">
-                    <Card className="border-none shadow-lg bg-white dark:bg-zinc-900">
+                    <Card className="border border-[#E2E8F0] shadow-sm bg-white rounded-xl">
                         <CardHeader>
                             <CardTitle>Histórico de Pagamentos</CardTitle>
                             <CardDescription>Registro de todos os pagamentos de comissões realizados.</CardDescription>
@@ -732,7 +732,7 @@ export default function FinancialPage() {
                             type="button"
                             onClick={confirmPayment}
                             disabled={paymentProcessing}
-                            className="bg-emerald-600 hover:bg-emerald-700"
+                            className="bg-[#0D9488] hover:bg-[#0F766E]"
                         >
                             {paymentProcessing ? "Processando..." : "Confirmar Pagamento"}
                         </Button>

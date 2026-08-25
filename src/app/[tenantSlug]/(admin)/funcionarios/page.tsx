@@ -119,7 +119,7 @@ export default function FuncionariosPage() {
     // ---- Supabase mutations ----
 
     const handleCreateEmployee = async () => {
-        if (!isSupabaseConfigured || !tenantId) {
+        if (!isSupabaseConfigured || !tenantId || !currentTenant) {
             // fallback: só fecha o modal se não tem Supabase
             setShowNewEmployee(false)
             resetForm()
@@ -129,7 +129,9 @@ export default function FuncionariosPage() {
         if (!supabase) return
 
         setSaving(true)
-        const { error } = await supabase.from("employees").insert({
+
+        // 1. Criar o profissional na tabela employees
+        const { data: newEmployee, error } = await supabase.from("employees").insert({
             tenant_id: tenantId,
             full_name: formData.name,
             email: formData.email,
@@ -143,13 +145,56 @@ export default function FuncionariosPage() {
             commission_rate: formData.commission,
             accepts_online_booking: formData.acceptsOnlineBooking,
             status: "active",
-        })
+        }).select("id").single()
 
-        setSaving(false)
-        if (error) {
-            console.error("[FuncionariosPage] Erro ao criar profissional:", error.message)
+        if (error || !newEmployee) {
+            setSaving(false)
+            console.error("[FuncionariosPage] Erro ao criar profissional:", error?.message)
             return
         }
+
+        // 2. Gerar token de convite e criar registro
+        const inviteToken = crypto.randomUUID()
+        const expiresAt = new Date()
+        expiresAt.setDate(expiresAt.getDate() + 7) // Expira em 7 dias
+
+        const { error: inviteError } = await supabase.from("employee_invites").insert({
+            token: inviteToken,
+            employee_id: newEmployee.id,
+            tenant_id: tenantId,
+            expires_at: expiresAt.toISOString(),
+            status: "pending",
+        })
+
+        if (inviteError) {
+            console.error("[FuncionariosPage] Erro ao criar convite:", inviteError.message)
+            // Continua mesmo com erro no convite - o profissional foi criado
+        }
+
+        // 3. Enviar email de convite
+        if (!inviteError && formData.email) {
+            try {
+                const response = await fetch("/api/send-email/employee-invite", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        employeeEmail: formData.email,
+                        employeeName: formData.name,
+                        tenantName: currentTenant.name,
+                        tenantSlug: currentTenant.slug,
+                        inviteToken: inviteToken,
+                    }),
+                })
+
+                if (!response.ok) {
+                    console.error("[FuncionariosPage] Erro ao enviar email de convite")
+                }
+            } catch (emailError) {
+                console.error("[FuncionariosPage] Erro ao enviar email:", emailError)
+            }
+        }
+
+        setSaving(false)
         setShowNewEmployee(false)
         resetForm()
         refetch()
@@ -266,8 +311,8 @@ export default function FuncionariosPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">Profissionais</h2>
-                    <p className="text-slate-500 dark:text-zinc-400 font-medium">Cadastre e gerencie a equipe do salão.</p>
+                    <h2 className="text-3xl font-bold tracking-tight text-[#0F172A]">Profissionais</h2>
+                    <p className="text-[#64748b] font-medium">Cadastre e gerencie a equipe do salão.</p>
                 </div>
                 <div className="flex gap-3">
                     <ImportExportButton
@@ -277,7 +322,7 @@ export default function FuncionariosPage() {
                     />
                     <Button
                         onClick={() => setShowNewEmployee(true)}
-                        className="rounded-xl h-12 px-6 bg-primary text-white font-bold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
+                        className="rounded-lg h-11 px-5 bg-[#0D9488] hover:bg-[#0F766E] text-white font-medium transition-all shadow-sm"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Novo Profissional
@@ -286,25 +331,25 @@ export default function FuncionariosPage() {
             </div>
 
             {/* Search & Stats */}
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border-none shadow-sm">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-sm">
                 <div className="relative flex-1 w-full max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
                     <Input
                         placeholder="Buscar por nome ou especialidade..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-12 pl-12 bg-slate-50 dark:bg-zinc-800 border-none rounded-2xl font-medium"
+                        className="h-10 pl-11 bg-[#F8F9FF] border-[#E2E8F0] rounded-lg font-medium focus:border-[#0D9488] focus:ring-[#0D9488]"
                     />
                 </div>
                 <div className="flex gap-4 items-center">
-                    <div className="flex bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl">
+                    <div className="flex bg-[#F1F5F9] p-1 rounded-lg">
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setViewMode('grid')}
                             className={cn(
-                                "rounded-lg h-9 w-9 p-0 transition-all",
-                                viewMode === 'grid' ? "bg-white dark:bg-zinc-700 shadow-sm text-primary" : "text-slate-400"
+                                "rounded-md h-8 w-8 p-0 transition-all",
+                                viewMode === 'grid' ? "bg-white shadow-sm text-[#0D9488]" : "text-[#64748b]"
                             )}
                         >
                             <LayoutGrid className="w-4 h-4" />
@@ -314,17 +359,17 @@ export default function FuncionariosPage() {
                             size="sm"
                             onClick={() => setViewMode('list')}
                             className={cn(
-                                "rounded-lg h-9 w-9 p-0 transition-all",
-                                viewMode === 'list' ? "bg-white dark:bg-zinc-700 shadow-sm text-primary" : "text-slate-400"
+                                "rounded-md h-8 w-8 p-0 transition-all",
+                                viewMode === 'list' ? "bg-white shadow-sm text-[#0D9488]" : "text-[#64748b]"
                             )}
                         >
                             <ListIcon className="w-4 h-4" />
                         </Button>
                     </div>
-                    <div className="flex gap-8 border-l border-slate-100 dark:border-zinc-800 pl-8">
+                    <div className="flex gap-8 border-l border-[#E2E8F0] pl-6">
                         <div className="text-right">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time</p>
-                            <p className="text-lg font-black text-slate-900 dark:text-white">
+                            <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wide">Time</p>
+                            <p className="text-lg font-bold text-[#0F172A]">
                                 {loading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : employees.length}
                             </p>
                         </div>

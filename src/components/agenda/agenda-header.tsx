@@ -3,11 +3,9 @@
 import { memo } from "react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { ChevronLeft, ChevronRight, Menu, Plus, Search, Settings, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, Menu, Plus, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
 
 interface AgendaHeaderProps {
     currentDate: Date
@@ -29,8 +27,6 @@ export const AgendaHeader = memo(function AgendaHeader({
     sidebarOpen,
     searchQuery,
     onSearchChange,
-    totalAppointments,
-    filteredCount,
 }: AgendaHeaderProps) {
     const navigateDate = (direction: 'prev' | 'next') => {
         const newDate = new Date(currentDate)
@@ -42,52 +38,64 @@ export const AgendaHeader = memo(function AgendaHeader({
         onDateChange(newDate)
     }
 
+    const goToToday = () => {
+        onDateChange(new Date())
+    }
+
+    const isToday = () => {
+        const today = new Date()
+        return currentDate.toDateString() === today.toDateString()
+    }
+
     return (
-        <div className="h-12 border-b border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center px-2 sm:px-3 gap-1.5 sm:gap-3">
+        <div className="h-14 border-b border-[#E2E8F0] bg-white flex items-center px-3 sm:px-4 gap-2 sm:gap-3">
             {/* Botão toggle sidebar */}
             <Button
                 variant="ghost"
                 size="icon"
                 onClick={onToggleSidebar}
-                className="h-8 w-8 flex-shrink-0"
+                className="h-9 w-9 flex-shrink-0 text-[#64748b] hover:text-[#0F172A] hover:bg-[#F1F5F9]"
             >
                 <Menu className="h-4 w-4" />
             </Button>
 
             {/* Navegação de data */}
-            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+            <div className="flex items-center gap-1 flex-shrink-0">
                 <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => navigateDate('prev')}
-                    className="h-8 w-8 text-[#FF7A00] hover:text-[#FF7A00] hover:bg-[#FF7A00]/10"
+                    className="h-8 w-8 text-[#64748b] hover:text-[#0F172A] hover:bg-[#F1F5F9]"
                 >
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
 
-                <div className="min-w-[100px] sm:min-w-[140px] text-center">
-                    <div className="text-xs sm:text-sm font-bold leading-tight">
-                        {format(currentDate, "d MMM yyyy", { locale: ptBR })}
+                <button
+                    onClick={goToToday}
+                    className="min-w-[120px] sm:min-w-[150px] text-center px-3 py-1.5 rounded-md hover:bg-[#F1F5F9] transition-colors"
+                >
+                    <div className="text-sm font-semibold text-[#0F172A] leading-tight">
+                        {format(currentDate, "d 'de' MMMM", { locale: ptBR })}
                     </div>
-                    <div className="text-[10px] sm:text-xs text-muted-foreground leading-tight capitalize hidden sm:block">
-                        {format(currentDate, "EEEE", { locale: ptBR })}
+                    <div className="text-[11px] text-[#64748b] leading-tight capitalize hidden sm:block">
+                        {isToday() ? 'Hoje' : format(currentDate, "EEEE", { locale: ptBR })}
                     </div>
-                </div>
+                </button>
 
                 <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => navigateDate('next')}
-                    className="h-8 w-8 text-[#FF7A00] hover:text-[#FF7A00] hover:bg-[#FF7A00]/10"
+                    className="h-8 w-8 text-[#64748b] hover:text-[#0F172A] hover:bg-[#F1F5F9]"
                 >
                     <ChevronRight className="h-4 w-4" />
                 </Button>
             </div>
 
-            {/* Campo de busca - Escondido em mobile pequeno */}
-            <div className="hidden md:flex flex-1 max-w-md">
+            {/* Campo de busca */}
+            <div className="hidden md:flex flex-1 max-w-sm">
                 <div className="relative w-full">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
                     <Input
                         value={searchQuery}
                         onChange={(e) => onSearchChange(e.target.value)}
@@ -96,41 +104,32 @@ export const AgendaHeader = memo(function AgendaHeader({
                                 onSearchChange('')
                             }
                         }}
-                        placeholder="Buscar clientes agendados hoje"
-                        className="pl-9 pr-9 h-8 text-sm rounded-lg border-slate-200 dark:border-zinc-800"
+                        placeholder="Buscar cliente..."
+                        className="pl-9 pr-9 h-9 text-sm rounded-md border-[#E2E8F0] focus:border-[#0D9488] focus:ring-[#0D9488]"
                     />
                     {searchQuery && (
                         <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => onSearchChange('')}
-                            className="absolute right-0.5 top-1/2 -translate-y-1/2 h-7 w-7"
+                            className="absolute right-0.5 top-1/2 -translate-y-1/2 h-8 w-8 text-[#94a3b8] hover:text-[#64748b]"
                         >
-                            <X className="h-3.5 w-3.5" />
+                            <X className="h-4 w-4" />
                         </Button>
                     )}
                 </div>
             </div>
 
-            {/* Spacer para empurrar botões à direita em mobile */}
+            {/* Spacer */}
             <div className="flex-1 md:hidden" />
 
-            {/* Botão + Agendar */}
+            {/* Botão Agendar */}
             <Button
                 onClick={onNewAppointment}
-                className="h-8 px-2 sm:px-4 text-sm rounded-lg bg-[#FF7A00] hover:bg-[#FF7A00]/90 text-white font-semibold flex-shrink-0"
+                className="h-9 px-3 sm:px-4 text-sm rounded-md bg-[#0D9488] hover:bg-[#0F766E] text-white font-medium flex-shrink-0 shadow-sm"
             >
                 <Plus className="h-4 w-4 sm:mr-1.5" />
-                <span className="hidden sm:inline">Agendar</span>
-            </Button>
-
-            {/* Botão configurações - Escondido em mobile pequeno */}
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 hidden sm:flex flex-shrink-0"
-            >
-                <Settings className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Novo Agendamento</span>
             </Button>
         </div>
     )

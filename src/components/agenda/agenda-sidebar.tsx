@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, memo } from "react"
+import { memo } from "react"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -27,13 +27,13 @@ const STATUS_CONFIG: Array<{
     label: string
     color: string
 }> = [
-    { value: 'staff_unavailable', label: 'Ausência', color: '#D1D1D1' },
-    { value: 'pending', label: 'Aguardando', color: '#EC9F73' },
-    { value: 'confirmed', label: 'Confirmado', color: '#64A500' },
-    { value: 'no_show', label: 'Não compareceu', color: '#949494' },
-    { value: 'in_progress', label: 'Em atendimento', color: '#65DDC8' },
-    { value: 'completed', label: 'Finalizado', color: '#88B2D5' },
-    { value: 'cancelled', label: 'Cancelado', color: '#DA9CE0' },
+    { value: 'staff_unavailable', label: 'Ausência', color: '#94a3b8' },
+    { value: 'pending', label: 'Aguardando', color: '#f59e0b' },
+    { value: 'confirmed', label: 'Confirmado', color: '#3b82f6' },
+    { value: 'no_show', label: 'Não compareceu', color: '#f97316' },
+    { value: 'in_progress', label: 'Em atendimento', color: '#8b5cf6' },
+    { value: 'completed', label: 'Finalizado', color: '#10b981' },
+    { value: 'cancelled', label: 'Cancelado', color: '#ef4444' },
 ]
 
 export const AgendaSidebar = memo(function AgendaSidebar({
@@ -46,7 +46,6 @@ export const AgendaSidebar = memo(function AgendaSidebar({
     currentDate,
     onDateChange,
 }: AgendaSidebarProps) {
-    // Agrupar profissionais por inicial
     const employeesByInitial = employees.reduce((acc, emp) => {
         const initial = emp.fullName.charAt(0).toUpperCase()
         if (!acc[initial]) acc[initial] = []
@@ -69,7 +68,6 @@ export const AgendaSidebar = memo(function AgendaSidebar({
         const hasAll = current.includes('all')
 
         if (hasAll) {
-            // Se "Todos" está selecionado, trocar para apenas esse profissional
             onFiltersChange({
                 ...filters,
                 selectedEmployees: [employeeId],
@@ -144,43 +142,48 @@ export const AgendaSidebar = memo(function AgendaSidebar({
     return (
         <div
             className={cn(
-                "h-full border-r border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 transition-all duration-300 ease-in-out overflow-hidden flex flex-col",
+                "h-full border-r border-[#E2E8F0] bg-white transition-all duration-300 ease-in-out overflow-hidden flex flex-col",
                 isOpen ? "w-[280px]" : "w-0"
             )}
         >
             {isOpen && (
-                <div className="flex flex-col h-full overflow-y-auto p-3 space-y-4">
-                    {/* 1. Calendário Mensal */}
+                <div className="flex flex-col h-full overflow-y-auto p-4 space-y-5">
+                    {/* Calendar */}
                     <div>
                         <Calendar
                             mode="single"
                             selected={currentDate}
                             onSelect={(date) => date && onDateChange(date)}
-                            className="rounded-md border w-full"
+                            className="rounded-md border border-[#E2E8F0] w-full"
                         />
                     </div>
 
-                    {/* 2. Botão Buscar e Agendar */}
+                    {/* New Appointment Button */}
                     <Button
                         onClick={onNewAppointment}
-                        className="w-full bg-[#FF7A00] hover:bg-[#FF7A00]/90 text-white font-semibold rounded-xl h-11"
+                        className="w-full bg-[#0D9488] hover:bg-[#0F766E] text-white font-medium rounded-md h-10"
                     >
                         <CalendarIcon className="h-4 w-4 mr-2" />
-                        Buscar e Agendar
+                        Novo Agendamento
                     </Button>
 
-                    {/* 3. Seleção de Profissionais */}
+                    {/* Professionals */}
                     <div className="space-y-3">
-                        <h3 className="text-sm font-bold uppercase text-muted-foreground">
+                        <h3 className="text-[11px] font-semibold uppercase text-[#94a3b8] tracking-wide">
                             Profissionais
                         </h3>
 
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5">
                             <Button
                                 variant={isEmployeeSelected('all') ? 'default' : 'outline'}
                                 size="sm"
                                 onClick={() => toggleEmployee('all')}
-                                className="h-8 px-3 rounded-lg text-xs font-semibold"
+                                className={cn(
+                                    "h-7 px-2.5 rounded text-xs font-medium",
+                                    isEmployeeSelected('all')
+                                        ? "bg-[#0F172A] hover:bg-[#1e293b] text-white"
+                                        : "border-[#E2E8F0] text-[#64748b] hover:text-[#0F172A] hover:border-[#94a3b8]"
+                                )}
                             >
                                 Todos
                             </Button>
@@ -197,14 +200,12 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                                     }
                                     size="sm"
                                     onClick={() => {
-                                        // Seleciona todos os profissionais dessa inicial
                                         const empIds = employeesByInitial[initial].map(e => e.id)
                                         const allSelected = empIds.every(id =>
                                             filters.selectedEmployees.includes(id)
                                         )
 
                                         if (allSelected) {
-                                            // Desselecionar todos dessa inicial
                                             const newSelection = filters.selectedEmployees.filter(
                                                 id => !empIds.includes(id)
                                             )
@@ -214,7 +215,6 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                                                     newSelection.length === 0 ? ['all'] : newSelection,
                                             })
                                         } else {
-                                            // Selecionar todos dessa inicial
                                             const current = filters.selectedEmployees.filter(
                                                 id => id !== 'all'
                                             )
@@ -224,24 +224,30 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                                             })
                                         }
                                     }}
-                                    className="h-8 w-8 p-0 rounded-lg text-xs font-bold"
+                                    className={cn(
+                                        "h-7 w-7 p-0 rounded text-xs font-semibold",
+                                        employeesByInitial[initial].some(emp =>
+                                            isEmployeeSelected(emp.id)
+                                        ) && !isEmployeeSelected('all')
+                                            ? "bg-[#0D9488] hover:bg-[#0F766E] text-white border-[#0D9488]"
+                                            : "border-[#E2E8F0] text-[#64748b] hover:text-[#0F172A] hover:border-[#94a3b8]"
+                                    )}
                                 >
                                     {initial}
                                 </Button>
                             ))}
                         </div>
 
-                        {/* Lista individual de profissionais */}
-                        <div className="space-y-1 max-h-[200px] overflow-y-auto">
+                        <div className="space-y-0.5 max-h-[180px] overflow-y-auto">
                             {employees.map(emp => (
                                 <button
                                     key={emp.id}
                                     onClick={() => toggleEmployee(emp.id)}
                                     className={cn(
-                                        "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
+                                        "w-full text-left px-2.5 py-1.5 rounded text-sm transition-colors",
                                         isEmployeeSelected(emp.id) && !isEmployeeSelected('all')
-                                            ? "bg-primary text-primary-foreground font-semibold"
-                                            : "hover:bg-slate-100 dark:hover:bg-zinc-800"
+                                            ? "bg-[#0D9488]/10 text-[#0D9488] font-medium"
+                                            : "text-[#64748b] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
                                     )}
                                 >
                                     {emp.fullName}
@@ -250,18 +256,23 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                         </div>
                     </div>
 
-                    {/* 4. Categoria de Serviço */}
+                    {/* Categories */}
                     <div className="space-y-3">
-                        <h3 className="text-sm font-bold uppercase text-muted-foreground">
+                        <h3 className="text-[11px] font-semibold uppercase text-[#94a3b8] tracking-wide">
                             Categorias
                         </h3>
 
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5">
                             <Button
                                 variant={isCategorySelected('all') ? 'default' : 'outline'}
                                 size="sm"
                                 onClick={() => toggleCategory('all')}
-                                className="h-8 px-3 rounded-lg text-xs font-semibold"
+                                className={cn(
+                                    "h-7 px-2.5 rounded text-xs font-medium",
+                                    isCategorySelected('all')
+                                        ? "bg-[#0F172A] hover:bg-[#1e293b] text-white"
+                                        : "border-[#E2E8F0] text-[#64748b] hover:text-[#0F172A]"
+                                )}
                             >
                                 Todas
                             </Button>
@@ -276,7 +287,12 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                                     }
                                     size="sm"
                                     onClick={() => toggleCategory(cat.id)}
-                                    className="h-8 px-3 rounded-lg text-xs font-semibold"
+                                    className={cn(
+                                        "h-7 px-2.5 rounded text-xs font-medium",
+                                        isCategorySelected(cat.id) && !isCategorySelected('all')
+                                            ? "bg-[#0D9488] hover:bg-[#0F766E] text-white border-[#0D9488]"
+                                            : "border-[#E2E8F0] text-[#64748b] hover:text-[#0F172A]"
+                                    )}
                                 >
                                     {cat.shortCode || cat.name}
                                 </Button>
@@ -284,23 +300,22 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                         </div>
                     </div>
 
-                    {/* 5. Status do Agendamento */}
+                    {/* Status */}
                     <div className="space-y-3">
-                        <h3 className="text-sm font-bold uppercase text-muted-foreground">
+                        <h3 className="text-[11px] font-semibold uppercase text-[#94a3b8] tracking-wide">
                             Status
                         </h3>
 
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5">
                             {STATUS_CONFIG.map(({ value, label, color }) => (
                                 <Badge
                                     key={value}
-                                    variant={
-                                        filters.selectedStatuses.includes(value) ? 'default' : 'outline'
-                                    }
+                                    variant="outline"
                                     className={cn(
-                                        "cursor-pointer transition-all h-7 px-3 text-xs font-semibold",
-                                        filters.selectedStatuses.includes(value) &&
-                                            "border-transparent text-white"
+                                        "cursor-pointer transition-all h-6 px-2 text-[11px] font-medium border",
+                                        filters.selectedStatuses.includes(value)
+                                            ? "text-white border-transparent"
+                                            : "bg-white"
                                     )}
                                     style={
                                         filters.selectedStatuses.includes(value)
@@ -315,9 +330,9 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                         </div>
                     </div>
 
-                    {/* 6. Fechamento de Conta */}
+                    {/* Account Closure */}
                     <div className="space-y-3">
-                        <h3 className="text-sm font-bold uppercase text-muted-foreground">
+                        <h3 className="text-[11px] font-semibold uppercase text-[#94a3b8] tracking-wide">
                             Fechamento
                         </h3>
 
@@ -328,7 +343,12 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                                 onClick={() =>
                                     onFiltersChange({ ...filters, accountClosure: 'open' })
                                 }
-                                className="flex-1 h-9 rounded-lg text-xs font-semibold"
+                                className={cn(
+                                    "flex-1 h-8 rounded text-xs font-medium",
+                                    filters.accountClosure === 'open'
+                                        ? "bg-[#0F172A] hover:bg-[#1e293b] text-white"
+                                        : "border-[#E2E8F0] text-[#64748b]"
+                                )}
                             >
                                 Aberta
                             </Button>
@@ -338,22 +358,26 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                                 onClick={() =>
                                     onFiltersChange({ ...filters, accountClosure: 'closed' })
                                 }
-                                className="flex-1 h-9 rounded-lg text-xs font-semibold"
+                                className={cn(
+                                    "flex-1 h-8 rounded text-xs font-medium",
+                                    filters.accountClosure === 'closed'
+                                        ? "bg-[#0F172A] hover:bg-[#1e293b] text-white"
+                                        : "border-[#E2E8F0] text-[#64748b]"
+                                )}
                             >
                                 Fechada
                             </Button>
                         </div>
                     </div>
 
-                    {/* 7. Tamanho da Agenda */}
+                    {/* Grid Size */}
                     <div className="space-y-3">
-                        <h3 className="text-sm font-bold uppercase text-muted-foreground">
+                        <h3 className="text-[11px] font-semibold uppercase text-[#94a3b8] tracking-wide">
                             Tamanho da Agenda
                         </h3>
 
-                        {/* Linha */}
                         <div className="space-y-2">
-                            <Label className="text-xs font-semibold">Linha (altura)</Label>
+                            <Label className="text-xs text-[#64748b]">Linha (altura)</Label>
                             <RadioGroup
                                 value={filters.gridSize.row}
                                 onValueChange={(value: GridSize) =>
@@ -362,14 +386,14 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                                         gridSize: { ...filters.gridSize, row: value },
                                     })
                                 }
-                                className="flex gap-2"
+                                className="flex gap-3"
                             >
                                 {(['PP', 'P', 'M', 'G'] as const).map(size => (
                                     <div key={size} className="flex items-center">
-                                        <RadioGroupItem value={size} id={`row-${size}`} />
+                                        <RadioGroupItem value={size} id={`row-${size}`} className="border-[#0D9488] text-[#0D9488]" />
                                         <Label
                                             htmlFor={`row-${size}`}
-                                            className="ml-2 text-xs cursor-pointer"
+                                            className="ml-1.5 text-xs text-[#64748b] cursor-pointer"
                                         >
                                             {size}
                                         </Label>
@@ -378,9 +402,8 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                             </RadioGroup>
                         </div>
 
-                        {/* Coluna */}
                         <div className="space-y-2">
-                            <Label className="text-xs font-semibold">Coluna (largura)</Label>
+                            <Label className="text-xs text-[#64748b]">Coluna (largura)</Label>
                             <RadioGroup
                                 value={filters.gridSize.column}
                                 onValueChange={(value: GridSize) =>
@@ -389,14 +412,14 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                                         gridSize: { ...filters.gridSize, column: value },
                                     })
                                 }
-                                className="flex gap-2"
+                                className="flex gap-3"
                             >
                                 {(['PP', 'P', 'M', 'G'] as const).map(size => (
                                     <div key={size} className="flex items-center">
-                                        <RadioGroupItem value={size} id={`col-${size}`} />
+                                        <RadioGroupItem value={size} id={`col-${size}`} className="border-[#0D9488] text-[#0D9488]" />
                                         <Label
                                             htmlFor={`col-${size}`}
-                                            className="ml-2 text-xs cursor-pointer"
+                                            className="ml-1.5 text-xs text-[#64748b] cursor-pointer"
                                         >
                                             {size}
                                         </Label>
@@ -406,9 +429,9 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                         </div>
                     </div>
 
-                    {/* 8. Exibição de Folga */}
+                    {/* Show Absences */}
                     <div className="space-y-3">
-                        <h3 className="text-sm font-bold uppercase text-muted-foreground">
+                        <h3 className="text-[11px] font-semibold uppercase text-[#94a3b8] tracking-wide">
                             Exibir Folga
                         </h3>
 
@@ -417,7 +440,12 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                                 variant={filters.showAbsences ? 'default' : 'outline'}
                                 size="sm"
                                 onClick={() => onFiltersChange({ ...filters, showAbsences: true })}
-                                className="flex-1 h-9 rounded-lg text-xs font-semibold"
+                                className={cn(
+                                    "flex-1 h-8 rounded text-xs font-medium",
+                                    filters.showAbsences
+                                        ? "bg-[#0F172A] hover:bg-[#1e293b] text-white"
+                                        : "border-[#E2E8F0] text-[#64748b]"
+                                )}
                             >
                                 Sim
                             </Button>
@@ -425,7 +453,12 @@ export const AgendaSidebar = memo(function AgendaSidebar({
                                 variant={!filters.showAbsences ? 'default' : 'outline'}
                                 size="sm"
                                 onClick={() => onFiltersChange({ ...filters, showAbsences: false })}
-                                className="flex-1 h-9 rounded-lg text-xs font-semibold"
+                                className={cn(
+                                    "flex-1 h-8 rounded text-xs font-medium",
+                                    !filters.showAbsences
+                                        ? "bg-[#0F172A] hover:bg-[#1e293b] text-white"
+                                        : "border-[#E2E8F0] text-[#64748b]"
+                                )}
                             >
                                 Não
                             </Button>

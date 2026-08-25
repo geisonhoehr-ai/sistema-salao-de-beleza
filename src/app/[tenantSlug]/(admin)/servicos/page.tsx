@@ -345,8 +345,8 @@ export default function ServicosPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">Catálogo</h2>
-                    <p className="text-slate-500 dark:text-zinc-400 font-medium">Configurações de serviços e experiências.</p>
+                    <h2 className="text-3xl font-bold tracking-tight text-[#0F172A]">Catálogo</h2>
+                    <p className="text-[#64748b] font-medium">Configurações de serviços e experiências.</p>
                 </div>
                 <div className="flex gap-3">
                     <ImportExportButton
@@ -354,7 +354,7 @@ export default function ServicosPage() {
                         type="servicos"
                         onImportComplete={refetchServices}
                     />
-                    <Button onClick={() => setShowNewService(true)} className="rounded-xl h-12 px-6 bg-primary text-white font-bold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20">
+                    <Button onClick={() => setShowNewService(true)} className="rounded-lg h-11 px-5 bg-[#0D9488] hover:bg-[#0F766E] text-white font-medium transition-all shadow-sm">
                         <Plus className="w-4 h-4 mr-2" />
                         Novo Serviço
                     </Button>
@@ -362,25 +362,25 @@ export default function ServicosPage() {
             </div>
 
             {/* Search & Stats */}
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border-none shadow-sm">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-sm">
                 <div className="relative flex-1 w-full max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
                     <Input
                         placeholder="Nome, categoria ou descrição..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-12 pl-12 bg-slate-50 dark:bg-zinc-800 border-none rounded-2xl font-medium"
+                        className="h-10 pl-11 bg-[#F8F9FF] border-[#E2E8F0] rounded-lg font-medium focus:border-[#0D9488] focus:ring-[#0D9488]"
                     />
                 </div>
                 <div className="flex gap-4 items-center">
-                    <div className="flex bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl">
+                    <div className="flex bg-[#F1F5F9] p-1 rounded-lg">
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setViewMode('grid')}
                             className={cn(
-                                "rounded-lg h-9 w-9 p-0 transition-all",
-                                viewMode === 'grid' ? "bg-white dark:bg-zinc-700 shadow-sm text-primary" : "text-slate-400"
+                                "rounded-md h-8 w-8 p-0 transition-all",
+                                viewMode === 'grid' ? "bg-white shadow-sm text-[#0D9488]" : "text-[#64748b]"
                             )}
                         >
                             <LayoutGrid className="w-4 h-4" />
@@ -390,17 +390,17 @@ export default function ServicosPage() {
                             size="sm"
                             onClick={() => setViewMode('list')}
                             className={cn(
-                                "rounded-lg h-9 w-9 p-0 transition-all",
-                                viewMode === 'list' ? "bg-white dark:bg-zinc-700 shadow-sm text-primary" : "text-slate-400"
+                                "rounded-md h-8 w-8 p-0 transition-all",
+                                viewMode === 'list' ? "bg-white shadow-sm text-[#0D9488]" : "text-[#64748b]"
                             )}
                         >
                             <ListIcon className="w-4 h-4" />
                         </Button>
                     </div>
-                    <div className="flex gap-8 border-l border-slate-100 dark:border-zinc-800 pl-8">
+                    <div className="flex gap-8 border-l border-[#E2E8F0] pl-6">
                         <div className="text-right">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ativos</p>
-                            <p className="text-lg font-black text-slate-900 dark:text-white">{services.length}</p>
+                            <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wide">Ativos</p>
+                            <p className="text-lg font-bold text-[#0F172A]">{services.length}</p>
                         </div>
                     </div>
                 </div>
@@ -428,11 +428,11 @@ export default function ServicosPage() {
 
             {/* Empty State */}
             {!servicesLoading && !servicesError && services.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-16 text-center bg-slate-50 dark:bg-zinc-900 rounded-3xl">
-                    <Sparkles className="w-12 h-12 text-slate-300 dark:text-zinc-600 mb-4" />
-                    <p className="text-slate-500 dark:text-zinc-400 font-bold mb-2">Nenhum serviço cadastrado</p>
-                    <p className="text-slate-400 dark:text-zinc-500 text-sm mb-4">Comece adicionando seu primeiro serviço</p>
-                    <Button onClick={() => setShowNewService(true)} className="rounded-xl">
+                <div className="flex flex-col items-center justify-center py-16 text-center bg-[#F8F9FF] rounded-xl border border-dashed border-[#E2E8F0]">
+                    <Sparkles className="w-12 h-12 text-[#94a3b8] mb-4" />
+                    <p className="text-[#0F172A] font-semibold mb-2">Nenhum serviço cadastrado</p>
+                    <p className="text-[#64748b] text-sm mb-4">Comece adicionando seu primeiro serviço</p>
+                    <Button onClick={() => setShowNewService(true)} className="rounded-lg bg-[#0D9488] hover:bg-[#0F766E] text-white">
                         <Plus className="w-4 h-4 mr-2" /> Novo Serviço
                     </Button>
                 </div>
@@ -448,33 +448,33 @@ export default function ServicosPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: idx * 0.05 }}
                         >
-                            <Card className="group relative overflow-hidden rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-8 hover:shadow-2xl transition-all duration-300">
+                            <Card className="group relative overflow-hidden rounded-xl border border-[#E2E8F0] shadow-sm bg-white p-6 hover:shadow-md hover:border-[#0D9488]/30 transition-all duration-300">
                                 {/* Category Badge */}
-                                <div className="absolute top-6 right-6">
-                                    <Badge className="bg-slate-100 dark:bg-zinc-800 text-slate-500 border-none font-bold text-[9px] uppercase tracking-widest px-3 py-1">
+                                <div className="absolute top-5 right-5">
+                                    <Badge className="bg-[#F1F5F9] text-[#64748b] border-none font-semibold text-[9px] uppercase tracking-wide px-2.5 py-1">
                                         {service.category}
                                     </Badge>
                                 </div>
 
-                                <div className="space-y-6">
+                                <div className="space-y-5">
                                     <div className="space-y-2">
-                                        <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                                            <Sparkles className="w-7 h-7" />
+                                        <div className="w-12 h-12 rounded-lg bg-[#0D9488]/10 flex items-center justify-center text-[#0D9488] group-hover:scale-105 transition-transform">
+                                            <Sparkles className="w-6 h-6" />
                                         </div>
-                                        <h3 className="text-xl font-black text-slate-900 dark:text-white">{service.name}</h3>
-                                        <p className="text-xs text-slate-400 line-clamp-2 font-medium min-h-[32px]">{service.description}</p>
+                                        <h3 className="text-lg font-bold text-[#0F172A]">{service.name}</h3>
+                                        <p className="text-xs text-[#64748b] line-clamp-2 font-medium min-h-[32px]">{service.description}</p>
                                     </div>
 
                                     {/* Stats Grid */}
-                                    <div className="grid grid-cols-2 gap-4 py-6 border-y border-slate-100 dark:border-zinc-800">
+                                    <div className="grid grid-cols-2 gap-4 py-4 border-y border-[#E2E8F0]">
                                         <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Preço</p>
-                                            <p className="text-lg font-black text-slate-900 dark:text-white">R$ {service.price}</p>
+                                            <p className="text-[10px] font-semibold text-[#64748b] uppercase">Preço</p>
+                                            <p className="text-lg font-bold text-[#0F172A]">R$ {service.price}</p>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Duração</p>
-                                            <p className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-1">
-                                                <Clock className="w-4 h-4 text-emerald-500" />
+                                            <p className="text-[10px] font-semibold text-[#64748b] uppercase">Duração</p>
+                                            <p className="text-lg font-bold text-[#0F172A] flex items-center gap-1">
+                                                <Clock className="w-4 h-4 text-[#0D9488]" />
                                                 {service.duration}m
                                             </p>
                                         </div>
@@ -483,12 +483,12 @@ export default function ServicosPage() {
                                     {/* Features */}
                                     <div className="flex gap-2">
                                         {service.allowOnlineBooking && (
-                                            <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-lg uppercase">
+                                            <div className="flex items-center gap-1 text-[9px] font-semibold text-[#0D9488] bg-[#0D9488]/10 px-2 py-1 rounded-md uppercase">
                                                 <Zap className="w-3 h-3" /> Booking On
                                             </div>
                                         )}
                                         {service.requiresDeposit && (
-                                            <div className="flex items-center gap-1 text-[9px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-lg uppercase">
+                                            <div className="flex items-center gap-1 text-[9px] font-semibold text-amber-600 bg-amber-500/10 px-2 py-1 rounded-md uppercase">
                                                 <ShieldCheck className="w-3 h-3" /> Depósito
                                             </div>
                                         )}
@@ -498,7 +498,7 @@ export default function ServicosPage() {
                                         <Button
                                             onClick={() => openEditDialog(service)}
                                             variant="outline"
-                                            className="flex-1 rounded-xl h-11 border-slate-200 dark:border-zinc-800 font-bold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all"
+                                            className="flex-1 rounded-lg h-10 border-[#E2E8F0] font-medium hover:bg-[#F8F9FF] hover:border-[#0D9488]/30 transition-all"
                                         >
                                             Configurar
                                         </Button>
@@ -506,7 +506,7 @@ export default function ServicosPage() {
                                             onClick={() => openDeleteDialog(service)}
                                             size="icon"
                                             variant="ghost"
-                                            className="rounded-xl h-11 w-11 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+                                            className="rounded-lg h-10 w-10 text-red-500 hover:bg-red-50"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </Button>
@@ -517,33 +517,33 @@ export default function ServicosPage() {
                     ))}
                 </div>
             ) : (
-                <div className="rounded-[2rem] overflow-hidden border-none shadow-sm bg-white dark:bg-zinc-900">
+                <div className="rounded-xl overflow-hidden border border-[#E2E8F0] shadow-sm bg-white">
                     <Table>
                         <TableHeader>
-                            <TableRow className="hover:bg-transparent border-slate-100 dark:border-zinc-800">
-                                <TableHead className="pl-8 py-6 font-bold text-xs uppercase tracking-widest">Serviço</TableHead>
-                                <TableHead className="font-bold text-xs uppercase tracking-widest">Categoria</TableHead>
-                                <TableHead className="font-bold text-xs uppercase tracking-widest">Duração</TableHead>
-                                <TableHead className="font-bold text-xs uppercase tracking-widest">Preço</TableHead>
-                                <TableHead className="font-bold text-xs uppercase tracking-widest">Status</TableHead>
-                                <TableHead className="text-right pr-8 font-bold text-xs uppercase tracking-widest">Ações</TableHead>
+                            <TableRow className="hover:bg-transparent border-[#E2E8F0] bg-[#F8F9FF]">
+                                <TableHead className="pl-6 py-4 font-semibold text-xs text-[#64748b] uppercase tracking-wide">Serviço</TableHead>
+                                <TableHead className="font-semibold text-xs text-[#64748b] uppercase tracking-wide">Categoria</TableHead>
+                                <TableHead className="font-semibold text-xs text-[#64748b] uppercase tracking-wide">Duração</TableHead>
+                                <TableHead className="font-semibold text-xs text-[#64748b] uppercase tracking-wide">Preço</TableHead>
+                                <TableHead className="font-semibold text-xs text-[#64748b] uppercase tracking-wide">Status</TableHead>
+                                <TableHead className="text-right pr-6 font-semibold text-xs text-[#64748b] uppercase tracking-wide">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredServices.map((service) => (
-                                <TableRow key={service.id} className="border-slate-50 dark:border-zinc-800/50 hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                    <TableCell className="pl-8 py-5">
-                                        <div className="font-bold text-slate-900 dark:text-white uppercase tracking-tight">{service.name}</div>
-                                        <div className="text-[10px] text-slate-400 truncate max-w-[200px]">{service.description}</div>
+                                <TableRow key={service.id} className="border-[#E2E8F0] hover:bg-[#F8F9FF] transition-colors">
+                                    <TableCell className="pl-6 py-4">
+                                        <div className="font-semibold text-[#0F172A]">{service.name}</div>
+                                        <div className="text-[10px] text-[#64748b] truncate max-w-[200px]">{service.description}</div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant="outline" className="rounded-full border-slate-200 font-bold text-[9px] uppercase">
+                                        <Badge variant="outline" className="rounded-md border-[#E2E8F0] font-medium text-[9px] uppercase">
                                             {service.category}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="flex items-center gap-2 font-bold text-slate-600 dark:text-zinc-400">
-                                            <Clock className="w-3 h-3 text-emerald-500" />
+                                        <div className="flex items-center gap-2 font-medium text-[#0F172A]">
+                                            <Clock className="w-3 h-3 text-[#0D9488]" />
                                             {service.duration}m
                                         </div>
                                     </TableCell>

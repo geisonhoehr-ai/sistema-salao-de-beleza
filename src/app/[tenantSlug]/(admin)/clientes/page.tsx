@@ -329,10 +329,10 @@ export default function ClientesPage() {
     return (
         <div className="space-y-8 relative">
             {selectedClients.length > 0 && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-full p-2 px-6 flex items-center gap-6 animate-in slide-in-from-bottom-4 fade-in duration-300">
-                    <div className="flex items-center gap-3 pr-6 border-r border-slate-200 dark:border-zinc-800">
-                        <Badge variant="default" className="rounded-full h-6 px-2">{selectedClients.length}</Badge>
-                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">selecionados</span>
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white border border-[#E2E8F0] shadow-lg rounded-full p-2 px-6 flex items-center gap-6 animate-in slide-in-from-bottom-4 fade-in duration-300">
+                    <div className="flex items-center gap-3 pr-6 border-r border-[#E2E8F0]">
+                        <Badge variant="default" className="rounded-full h-6 px-2 bg-[#0D9488]">{selectedClients.length}</Badge>
+                        <span className="text-sm font-semibold text-[#0F172A]">selecionados</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <Button
@@ -452,8 +452,8 @@ export default function ClientesPage() {
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Clientes</h1>
-                    <p className="text-muted-foreground mt-1">Gerencie sua base e fidelize seu público.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Clientes</h1>
+                    <p className="text-[#64748b] mt-1">Gerencie sua base e fidelize seu público.</p>
                 </div>
             </div>
 
@@ -475,7 +475,7 @@ export default function ClientesPage() {
             <section className="flex flex-col sm:flex-row gap-4">
                 <Button
                     variant="outline"
-                    className="gap-2 rounded-2xl bg-white/50 border-transparent hover:bg-white hover:border-black/5 dark:bg-zinc-900/50 dark:hover:bg-zinc-900 dark:hover:border-white/5"
+                    className="gap-2 rounded-lg bg-white border-[#E2E8F0] hover:bg-[#F8F9FF] hover:border-[#0D9488]/30"
                     onClick={() => setViewMode(prev => prev === 'grid' ? 'list' : 'grid')}
                 >
                     {viewMode === 'grid' ? <ListIcon className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
@@ -487,7 +487,7 @@ export default function ClientesPage() {
                     type="clientes"
                     onImportComplete={refetch}
                 />
-                <Button className="rounded-2xl gap-2" onClick={() => setShowNewClient(true)}>
+                <Button className="rounded-lg gap-2 bg-[#0D9488] hover:bg-[#0F766E] text-white" onClick={() => setShowNewClient(true)}>
                     <Plus className="w-4 h-4" />
                     Novo Cliente
                 </Button>
@@ -524,16 +524,16 @@ export default function ClientesPage() {
 
             {/* Empty State */}
             {!isLoading && !loadError && filteredClients.length === 0 && totalCount === 0 && (
-                <Card className="rounded-2xl border-dashed">
+                <Card className="rounded-xl border border-dashed border-[#E2E8F0]">
                     <CardContent className="flex flex-col items-center justify-center py-16 space-y-4">
-                        <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center">
-                            <Users className="w-8 h-8 text-slate-400" />
+                        <div className="w-16 h-16 rounded-full bg-[#F1F5F9] flex items-center justify-center">
+                            <Users className="w-8 h-8 text-[#64748b]" />
                         </div>
                         <div className="text-center space-y-2">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Nenhum cliente cadastrado</h3>
-                            <p className="text-sm text-muted-foreground max-w-md">Comece adicionando seu primeiro cliente ou importe uma lista.</p>
+                            <h3 className="text-lg font-bold text-[#0F172A]">Nenhum cliente cadastrado</h3>
+                            <p className="text-sm text-[#64748b] max-w-md">Comece adicionando seu primeiro cliente ou importe uma lista.</p>
                         </div>
-                        <Button onClick={() => setShowNewClient(true)} className="rounded-xl">
+                        <Button onClick={() => setShowNewClient(true)} className="rounded-lg bg-[#0D9488] hover:bg-[#0F766E] text-white">
                             <Plus className="w-4 h-4 mr-2" />
                             Adicionar Cliente
                         </Button>
@@ -544,7 +544,7 @@ export default function ClientesPage() {
             {/* Content View - Only show when we have data */}
             {!isLoading && !loadError && filteredClients.length > 0 && (viewMode === 'list' ? (
                 <>
-                    <div className="hidden md:block rounded-2xl border border-black/5 dark:border-white/5 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl shadow-sm overflow-hidden">
+                    <div className="hidden md:block rounded-xl border border-[#E2E8F0] bg-white shadow-sm overflow-hidden">
                         <Table>
                             <TableHeader className="bg-black/5 dark:bg-white/5">
                                 <TableRow className="hover:bg-transparent border-black/5 dark:border-white/5">

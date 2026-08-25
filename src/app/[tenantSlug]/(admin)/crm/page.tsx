@@ -69,64 +69,63 @@ export default function CrmPage() {
         <div className="space-y-8 p-8 max-w-[1600px] mx-auto pb-32">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-                        <MessageCircle className="w-8 h-8 text-pink-500 fill-pink-500" />
+                    <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight flex items-center gap-3">
+                        <MessageCircle className="w-7 h-7 text-[#0D9488]" />
                         CRM & Marketing
                     </h1>
-                    <p className="text-slate-500 text-lg">Engaje seus clientes com campanhas automáticas.</p>
+                    <p className="text-[#64748b] text-lg">Engaje seus clientes com campanhas automáticas.</p>
                 </div>
-                <Button className="rounded-full h-12 px-6 bg-pink-600 hover:bg-pink-700 text-white gap-2 shadow-lg shadow-pink-500/20">
+                <Button className="rounded-lg h-11 px-5 bg-[#0D9488] hover:bg-[#0F766E] text-white gap-2 shadow-sm font-medium">
                     <Plus className="w-5 h-5" />
                     Nova Campanha
                 </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="bg-gradient-to-br from-pink-500 to-rose-600 border-none text-white shadow-xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 blur-2xl" />
+                <Card className="bg-[#0F172A] border-none text-white shadow-md rounded-xl">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-pink-100 font-medium text-sm flex items-center gap-2">
+                        <CardTitle className="text-[#94a3b8] font-medium text-sm flex items-center gap-2">
                             <Send className="w-4 h-4" /> Mensagens Enviadas
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-4xl font-black">2.450</div>
-                        <p className="text-pink-100 text-sm mt-1">Neste mês (+15% vs anterior)</p>
+                        <div className="text-3xl font-bold">2.450</div>
+                        <p className="text-[#64748b] text-sm mt-1">Neste mês (+15% vs anterior)</p>
                     </CardContent>
                 </Card>
 
-                <Card className="bg-white dark:bg-zinc-900 shadow-sm border-l-4 border-l-emerald-500">
+                <Card className="bg-white shadow-sm border border-[#E2E8F0] border-l-4 border-l-[#0D9488] rounded-xl">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-slate-500 font-medium text-sm flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-emerald-500" /> Conversão Estimada
+                        <CardTitle className="text-[#64748b] font-medium text-sm flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-[#0D9488]" /> Conversão Estimada
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-4xl font-black text-slate-900 dark:text-white">R$ 12.5k</div>
-                        <p className="text-slate-400 text-sm mt-1">Gerado através de campanhas</p>
+                        <div className="text-3xl font-bold text-[#0F172A]">R$ 12.5k</div>
+                        <p className="text-[#64748b] text-sm mt-1">Gerado através de campanhas</p>
                     </CardContent>
                 </Card>
 
-                <Card className="bg-white dark:bg-zinc-900 shadow-sm border-l-4 border-l-blue-500">
+                <Card className="bg-white shadow-sm border border-[#E2E8F0] border-l-4 border-l-blue-500 rounded-xl">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-slate-500 font-medium text-sm flex items-center gap-2">
+                        <CardTitle className="text-[#64748b] font-medium text-sm flex items-center gap-2">
                             <Users className="w-4 h-4 text-blue-500" /> Base Alcançável
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-4xl font-black text-slate-900 dark:text-white">96%</div>
-                        <p className="text-slate-400 text-sm mt-1">Clientes com WhatsApp válido</p>
+                        <div className="text-3xl font-bold text-[#0F172A]">96%</div>
+                        <p className="text-[#64748b] text-sm mt-1">Clientes com WhatsApp válido</p>
                     </CardContent>
                 </Card>
             </div>
 
             <Tabs defaultValue="campaigns" className="space-y-6">
-                <TabsList className="bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl">
-                    <TabsTrigger value="campaigns" className="rounded-lg gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 dark:data-[state=active]:text-white">
+                <TabsList className="bg-[#F1F5F9] p-1 rounded-lg">
+                    <TabsTrigger value="campaigns" className="rounded-md gap-2 data-[state=active]:bg-white data-[state=active]:text-[#0F172A] data-[state=active]:shadow-sm">
                         <MessageCircle className="w-4 h-4" />
                         Minhas Campanhas
                     </TabsTrigger>
-                    <TabsTrigger value="templates" className="rounded-lg gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 dark:data-[state=active]:text-white">
+                    <TabsTrigger value="templates" className="rounded-md gap-2 data-[state=active]:bg-white data-[state=active]:text-[#0F172A] data-[state=active]:shadow-sm">
                         <Gift className="w-4 h-4" />
                         Modelos Prontos
                     </TabsTrigger>

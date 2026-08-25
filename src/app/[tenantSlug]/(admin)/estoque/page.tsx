@@ -252,25 +252,25 @@ export default function EstoquePage() {
         <div className="p-6 space-y-8 max-w-7xl mx-auto pb-20">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Estoque & PDV</h1>
-                    <p className="text-slate-500 dark:text-zinc-400 font-medium">Gestão de produtos e vendas diretas.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Estoque & PDV</h1>
+                    <p className="text-[#64748b] font-medium">Gestão de produtos e vendas diretas.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="rounded-xl border-slate-200" onClick={() => toast.info("Em breve!")}>
+                    <Button variant="outline" className="rounded-lg border-[#E2E8F0] hover:bg-[#F8F9FF]" onClick={() => toast.info("Em breve!")}>
                         <Barcode className="w-4 h-4 mr-2" /> Escanear Código
                     </Button>
-                    <Button className="rounded-xl bg-primary text-white font-bold" onClick={openNewProduct}>
+                    <Button className="rounded-lg bg-[#0D9488] hover:bg-[#0F766E] text-white font-medium" onClick={openNewProduct}>
                         <Plus className="w-4 h-4 mr-2" /> Novo Produto
                     </Button>
                 </div>
             </div>
 
             <Tabs defaultValue="pdv" className="space-y-8">
-                <TabsList className="bg-slate-100 dark:bg-zinc-900 p-1 rounded-2xl h-14 w-full md:w-auto">
-                    <TabsTrigger value="pdv" className="rounded-xl px-8 font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 transition-all">
+                <TabsList className="bg-[#F1F5F9] p-1 rounded-lg h-12 w-full md:w-auto">
+                    <TabsTrigger value="pdv" className="rounded-md px-6 font-medium data-[state=active]:bg-white data-[state=active]:text-[#0F172A] data-[state=active]:shadow-sm transition-all">
                         <ShoppingCart className="w-4 h-4 mr-2" /> Venda Rápida (PDV)
                     </TabsTrigger>
-                    <TabsTrigger value="inventario" className="rounded-xl px-8 font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 transition-all">
+                    <TabsTrigger value="inventario" className="rounded-md px-6 font-medium data-[state=active]:bg-white data-[state=active]:text-[#0F172A] data-[state=active]:shadow-sm transition-all">
                         <Package className="w-4 h-4 mr-2" /> Inventário
                     </TabsTrigger>
                 </TabsList>
@@ -280,10 +280,10 @@ export default function EstoquePage() {
                         {/* Product Grid */}
                         <div className="lg:col-span-2 space-y-6">
                             <div className="relative group">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8] group-focus-within:text-[#0D9488] transition-colors" />
                                 <Input
                                     placeholder="Buscar produto pelo nome ou categoria..."
-                                    className="h-14 pl-12 rounded-2xl border-none bg-white dark:bg-zinc-900 shadow-sm focus:ring-primary"
+                                    className="h-11 pl-11 rounded-lg border-[#E2E8F0] bg-white shadow-sm focus:ring-[#0D9488] focus:border-[#0D9488]"
                                 />
                             </div>
 
@@ -297,23 +297,23 @@ export default function EstoquePage() {
                                         <Card
                                             key={product.id}
                                             onClick={() => addToCart(product.id)}
-                                            className="p-4 rounded-3xl border-none shadow-sm bg-white dark:bg-zinc-900 hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer group"
+                                            className="p-4 rounded-xl border border-[#E2E8F0] shadow-sm bg-white hover:shadow-md hover:border-[#0D9488]/30 transition-all cursor-pointer group"
                                         >
                                             <div className="flex items-start justify-between mb-4">
-                                                <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                                                    <Package className="w-5 h-5 text-primary" />
+                                                <div className="w-11 h-11 rounded-lg bg-[#0D9488]/10 flex items-center justify-center group-hover:bg-[#0D9488]/15 transition-colors">
+                                                    <Package className="w-5 h-5 text-[#0D9488]" />
                                                 </div>
-                                                <Badge variant="outline" className="rounded-full border-slate-100 dark:border-zinc-800 font-bold text-[10px] uppercase">
+                                                <Badge variant="outline" className="rounded-md border-[#E2E8F0] font-medium text-[10px] uppercase">
                                                     {product.category}
                                                 </Badge>
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-slate-900 dark:text-white">{product.name}</h4>
+                                                <h4 className="font-semibold text-[#0F172A]">{product.name}</h4>
                                                 <div className="flex items-center justify-between mt-2">
-                                                    <p className="text-lg font-black text-primary">R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                                    <p className="text-lg font-bold text-[#0D9488]">R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                                     <p className={cn(
-                                                        "text-[10px] font-bold uppercase",
-                                                        product.stock <= product.minStock ? "text-amber-500" : "text-slate-400"
+                                                        "text-[10px] font-semibold uppercase",
+                                                        product.stock <= product.minStock ? "text-amber-500" : "text-[#64748b]"
                                                     )}>
                                                         {product.stock} em estoque
                                                     </p>
@@ -327,10 +327,10 @@ export default function EstoquePage() {
 
                         {/* Cart Sidebar */}
                         <div className="space-y-6">
-                            <Card className="rounded-[2.5rem] border-none shadow-2xl bg-white dark:bg-zinc-900 p-8 sticky top-24 min-h-[500px] flex flex-col">
-                                <div className="flex items-center justify-between mb-8">
-                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Carrinho</h3>
-                                    <Badge className="bg-primary/10 text-primary border-none rounded-full px-3">
+                            <Card className="rounded-xl border border-[#E2E8F0] shadow-md bg-white p-6 sticky top-24 min-h-[500px] flex flex-col">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-lg font-bold text-[#0F172A]">Carrinho</h3>
+                                    <Badge className="bg-[#0D9488]/10 text-[#0D9488] border-none rounded-md px-2.5">
                                         {cart.reduce((acc, i) => acc + i.quantity, 0)} itens
                                     </Badge>
                                 </div>

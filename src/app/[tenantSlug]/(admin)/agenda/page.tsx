@@ -308,7 +308,7 @@ export default function AgendaPage() {
     }
 
     return (
-        <>
+        <div className="-m-4 md:-m-6">
             {/* Modais */}
             <NewAppointmentModal
                 isOpen={isNewAppointmentModalOpen}
@@ -399,6 +399,6 @@ export default function AgendaPage() {
                     />
                 </div>
             </div>
-        </>
+        </div>
     )
 }

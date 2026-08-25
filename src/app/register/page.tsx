@@ -2,7 +2,6 @@
 
 import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { motion } from "framer-motion"
 import { ArrowRight, Building2, Mail, Lock, User, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -16,6 +15,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { supabase } from "@/lib/supabase"
+import Link from "next/link"
 
 const BUSINESS_TYPES = [
     { value: "salon", label: "Salão de Beleza" },
@@ -116,7 +116,6 @@ function RegisterContent() {
         setError("")
 
         try {
-            // 1. Create user in Supabase Auth
             const { data: authData, error: signUpError } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
@@ -141,18 +140,7 @@ function RegisterContent() {
                 return
             }
 
-            // Debug: check what we got from signUp
-            console.log("SignUp result:", {
-                user: authData.user?.id,
-                session: authData.session ? "EXISTS" : "NULL",
-                email_confirmed: authData.user?.email_confirmed_at,
-            })
-
-            // 2. Check if email confirmation is disabled (session exists in signup response)
             if (authData.session) {
-                // Email confirmation is disabled - create tenant immediately
-                console.log("Email confirmation disabled, creating tenant now...")
-
                 const baseSlug = generateSlug(formData.businessName)
                 const uniqueSlug = await ensureUniqueSlug(baseSlug)
 
@@ -165,8 +153,8 @@ function RegisterContent() {
                         description: `${formData.businessName} - ${BUSINESS_TYPES.find(t => t.value === formData.businessType)?.label}`,
                     },
                     theme: {
-                        primaryColor: "#7c3aed",
-                        accentColor: "#a78bfa",
+                        primaryColor: "#0F172A",
+                        accentColor: "#0D9488",
                     },
                     plan_id: isAdminMode ? "pro" : "trial",
                     subscription_status: isAdminMode ? "active" : "trialing",
@@ -190,7 +178,6 @@ function RegisterContent() {
                     return
                 }
 
-                // Update user metadata
                 const { error: updateError } = await supabase.auth.updateUser({
                     data: {
                         full_name: formData.userName,
@@ -203,7 +190,6 @@ function RegisterContent() {
                     console.error("Error updating user metadata:", updateError)
                 }
 
-                // Create profile
                 const { error: profileError } = await supabase
                     .from("app_users")
                     .insert({
@@ -215,16 +201,12 @@ function RegisterContent() {
                     console.error("Profile creation error:", profileError)
                 }
 
-                // Store tenant info
                 localStorage.setItem("currentTenantId", tenant.id)
                 localStorage.setItem("tenantSlug", tenant.slug)
 
-                // Redirect to dashboard
-                router.push(`/${tenant.slug}/agenda`)
+                // Redirect to onboarding to complete business setup
+                router.push(`/${tenant.slug}/onboarding`)
             } else {
-                // Email confirmation is enabled - save data and redirect to verify email
-                console.log("Email confirmation enabled, redirecting to verify-email...")
-
                 const pendingData = {
                     userId: authData.user.id,
                     email: formData.email,
@@ -238,7 +220,7 @@ function RegisterContent() {
                 router.push("/verify-email")
             }
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Registration error:", err)
             setError("Erro ao criar cadastro. Por favor, tente novamente.")
         } finally {
@@ -247,187 +229,243 @@ function RegisterContent() {
     }
 
     return (
-        <div className="fixed inset-0 bg-white dark:bg-zinc-950 flex items-center justify-center p-4 sm:p-6 font-sans overflow-auto">
-            {/* Background decorations */}
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 opacity-40" />
-            <div className="absolute top-20 left-10 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
-            <div className="absolute top-40 right-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
-
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="max-w-md w-full space-y-6 sm:space-y-8 relative z-10"
-            >
-                <div className="text-center space-y-3 sm:space-y-4">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 mx-auto flex items-center justify-center text-white text-xl sm:text-2xl font-black shadow-2xl shadow-purple-500/30">
-                        T
-                    </div>
+        <div className="min-h-screen flex">
+            {/* Left Panel - Branding */}
+            <div className="hidden lg:flex lg:w-1/2 bg-[#0F172A] relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#1e293b] to-[#0F172A]" />
+                <div className="relative z-10 flex flex-col justify-between p-12 text-white">
                     <div>
-                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-gray-900 dark:text-white">
-                            Criar Conta no Tratto
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 rounded-lg bg-[#0D9488] flex items-center justify-center font-bold text-lg">
+                                T
+                            </div>
+                            <span className="text-2xl font-semibold tracking-tight">Tratto</span>
+                        </div>
+                        <p className="text-white/60 text-sm">Sistema de Gestão</p>
+                    </div>
+
+                    <div className="space-y-6">
+                        <h2 className="text-4xl font-semibold leading-tight">
+                            Comece agora<br />
+                            <span className="text-[#0D9488]">gratuitamente</span>
+                        </h2>
+                        <p className="text-white/70 text-lg max-w-md leading-relaxed">
+                            30 dias de teste grátis. Sem necessidade de cartão de crédito.
+                        </p>
+
+                        <div className="space-y-3 pt-4">
+                            <div className="flex items-center gap-3 text-white/80">
+                                <div className="w-5 h-5 rounded-full bg-[#0D9488]/20 flex items-center justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-[#0D9488]" />
+                                </div>
+                                <span>Agenda inteligente</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-white/80">
+                                <div className="w-5 h-5 rounded-full bg-[#0D9488]/20 flex items-center justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-[#0D9488]" />
+                                </div>
+                                <span>Gestão de clientes</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-white/80">
+                                <div className="w-5 h-5 rounded-full bg-[#0D9488]/20 flex items-center justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-[#0D9488]" />
+                                </div>
+                                <span>Controle financeiro</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-white/80">
+                                <div className="w-5 h-5 rounded-full bg-[#0D9488]/20 flex items-center justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-[#0D9488]" />
+                                </div>
+                                <span>Relatórios completos</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="text-sm text-white/40">
+                        © 2024 Tratto. Todos os direitos reservados.
+                    </div>
+                </div>
+            </div>
+
+            {/* Right Panel - Register Form */}
+            <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-[#F8F9FF] overflow-auto">
+                <div className="w-full max-w-md py-8">
+                    {/* Mobile Logo */}
+                    <div className="lg:hidden text-center mb-8">
+                        <div className="flex items-center justify-center gap-3 mb-2">
+                            <div className="w-10 h-10 rounded-lg bg-[#0F172A] flex items-center justify-center text-white font-bold text-lg">
+                                T
+                            </div>
+                            <span className="text-2xl font-semibold text-[#0F172A]">Tratto</span>
+                        </div>
+                    </div>
+
+                    <div className="mb-6">
+                        <h1 className="text-2xl font-semibold text-[#0F172A] mb-2">
+                            Criar sua conta
                         </h1>
-                        <p className="text-sm sm:text-base text-gray-600 dark:text-zinc-400 font-medium">
-                            Configure sua empresa em minutos
+                        <p className="text-[#64748b]">
+                            Configure sua empresa em poucos minutos
+                        </p>
+                    </div>
+
+                    <Card className="p-6 sm:p-8 bg-white border border-[#E2E8F0] shadow-sm">
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* User Name */}
+                            <div className="space-y-2">
+                                <Label className="text-xs font-medium text-[#64748b] uppercase tracking-wide">
+                                    Seu Nome
+                                </Label>
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]">
+                                        <User className="w-4 h-4" />
+                                    </div>
+                                    <Input
+                                        type="text"
+                                        placeholder="João Silva"
+                                        value={formData.userName}
+                                        onChange={(e) => handleChange("userName", e.target.value)}
+                                        className="h-11 pl-10 rounded-md border-[#E2E8F0] focus:border-[#0D9488] focus:ring-[#0D9488]"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Email */}
+                            <div className="space-y-2">
+                                <Label className="text-xs font-medium text-[#64748b] uppercase tracking-wide">
+                                    Email
+                                </Label>
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]">
+                                        <Mail className="w-4 h-4" />
+                                    </div>
+                                    <Input
+                                        type="email"
+                                        placeholder="joao@email.com"
+                                        value={formData.email}
+                                        onChange={(e) => handleChange("email", e.target.value)}
+                                        className="h-11 pl-10 rounded-md border-[#E2E8F0] focus:border-[#0D9488] focus:ring-[#0D9488]"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Password */}
+                            <div className="space-y-2">
+                                <Label className="text-xs font-medium text-[#64748b] uppercase tracking-wide">
+                                    Senha
+                                </Label>
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]">
+                                        <Lock className="w-4 h-4" />
+                                    </div>
+                                    <Input
+                                        type="password"
+                                        placeholder="Mínimo 6 caracteres"
+                                        value={formData.password}
+                                        onChange={(e) => handleChange("password", e.target.value)}
+                                        className="h-11 pl-10 rounded-md border-[#E2E8F0] focus:border-[#0D9488] focus:ring-[#0D9488]"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Confirm Password */}
+                            <div className="space-y-2">
+                                <Label className="text-xs font-medium text-[#64748b] uppercase tracking-wide">
+                                    Confirmar Senha
+                                </Label>
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]">
+                                        <Lock className="w-4 h-4" />
+                                    </div>
+                                    <Input
+                                        type="password"
+                                        placeholder="Digite a senha novamente"
+                                        value={formData.confirmPassword}
+                                        onChange={(e) => handleChange("confirmPassword", e.target.value)}
+                                        className="h-11 pl-10 rounded-md border-[#E2E8F0] focus:border-[#0D9488] focus:ring-[#0D9488]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="border-t border-[#E2E8F0] my-4" />
+
+                            {/* Business Name */}
+                            <div className="space-y-2">
+                                <Label className="text-xs font-medium text-[#64748b] uppercase tracking-wide">
+                                    Nome da Empresa
+                                </Label>
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]">
+                                        <Building2 className="w-4 h-4" />
+                                    </div>
+                                    <Input
+                                        type="text"
+                                        placeholder="Salão Beleza Pura"
+                                        value={formData.businessName}
+                                        onChange={(e) => handleChange("businessName", e.target.value)}
+                                        className="h-11 pl-10 rounded-md border-[#E2E8F0] focus:border-[#0D9488] focus:ring-[#0D9488]"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Business Type */}
+                            <div className="space-y-2">
+                                <Label className="text-xs font-medium text-[#64748b] uppercase tracking-wide">
+                                    Tipo de Negócio
+                                </Label>
+                                <Select value={formData.businessType} onValueChange={(val) => handleChange("businessType", val)}>
+                                    <SelectTrigger className="h-11 rounded-md border-[#E2E8F0] focus:border-[#0D9488] focus:ring-[#0D9488]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {BUSINESS_TYPES.map((type) => (
+                                            <SelectItem key={type.value} value={type.value}>
+                                                {type.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {error && (
+                                <div className="p-3 rounded-md bg-red-50 border border-red-200">
+                                    <p className="text-sm text-red-600 text-center">{error}</p>
+                                </div>
+                            )}
+
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full h-11 rounded-md bg-[#0D9488] hover:bg-[#0F766E] text-white font-medium transition-colors mt-2"
+                            >
+                                {isSubmitting ? (
+                                    <div className="flex items-center gap-2">
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Criando conta...
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        Criar Conta
+                                        <ArrowRight className="w-4 h-4" />
+                                    </div>
+                                )}
+                            </Button>
+                        </form>
+                    </Card>
+
+                    <div className="mt-6 text-center">
+                        <p className="text-sm text-[#64748b]">
+                            Já tem uma conta?{" "}
+                            <Link
+                                href="/login"
+                                className="font-medium text-[#0D9488] hover:text-[#0F766E] transition-colors"
+                            >
+                                Fazer login
+                            </Link>
                         </p>
                     </div>
                 </div>
-
-                <Card className="p-6 sm:p-8 rounded-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-gray-100 dark:border-zinc-800 shadow-2xl space-y-5 sm:space-y-6">
-                    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-                        {/* User Name */}
-                        <div className="space-y-2">
-                            <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                Seu Nome *
-                            </Label>
-                            <div className="relative group">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-purple-600 transition-colors">
-                                    <User className="w-5 h-5" />
-                                </div>
-                                <Input
-                                    type="text"
-                                    placeholder="João Silva"
-                                    value={formData.userName}
-                                    onChange={(e) => handleChange("userName", e.target.value)}
-                                    className="h-12 pl-12 pr-4 rounded-xl border border-gray-200 dark:border-zinc-700"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Email */}
-                        <div className="space-y-2">
-                            <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                Email *
-                            </Label>
-                            <div className="relative group">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-purple-600 transition-colors">
-                                    <Mail className="w-5 h-5" />
-                                </div>
-                                <Input
-                                    type="email"
-                                    placeholder="joao@email.com"
-                                    value={formData.email}
-                                    onChange={(e) => handleChange("email", e.target.value)}
-                                    className="h-12 pl-12 pr-4 rounded-xl border border-gray-200 dark:border-zinc-700"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Password */}
-                        <div className="space-y-2">
-                            <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                Senha *
-                            </Label>
-                            <div className="relative group">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-purple-600 transition-colors">
-                                    <Lock className="w-5 h-5" />
-                                </div>
-                                <Input
-                                    type="password"
-                                    placeholder="Mínimo 6 caracteres"
-                                    value={formData.password}
-                                    onChange={(e) => handleChange("password", e.target.value)}
-                                    className="h-12 pl-12 pr-4 rounded-xl border border-gray-200 dark:border-zinc-700"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Confirm Password */}
-                        <div className="space-y-2">
-                            <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                Confirmar Senha *
-                            </Label>
-                            <div className="relative group">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-purple-600 transition-colors">
-                                    <Lock className="w-5 h-5" />
-                                </div>
-                                <Input
-                                    type="password"
-                                    placeholder="Digite a senha novamente"
-                                    value={formData.confirmPassword}
-                                    onChange={(e) => handleChange("confirmPassword", e.target.value)}
-                                    className="h-12 pl-12 pr-4 rounded-xl border border-gray-200 dark:border-zinc-700"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="border-t border-gray-200 dark:border-zinc-700 pt-4"></div>
-
-                        {/* Business Name */}
-                        <div className="space-y-2">
-                            <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                Nome da Empresa *
-                            </Label>
-                            <div className="relative group">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-purple-600 transition-colors">
-                                    <Building2 className="w-5 h-5" />
-                                </div>
-                                <Input
-                                    type="text"
-                                    placeholder="Salão Beleza Pura"
-                                    value={formData.businessName}
-                                    onChange={(e) => handleChange("businessName", e.target.value)}
-                                    className="h-12 pl-12 pr-4 rounded-xl border border-gray-200 dark:border-zinc-700"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Business Type */}
-                        <div className="space-y-2">
-                            <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                Tipo de Negócio
-                            </Label>
-                            <Select value={formData.businessType} onValueChange={(val) => handleChange("businessType", val)}>
-                                <SelectTrigger className="h-12 rounded-xl border border-gray-200 dark:border-zinc-700">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {BUSINESS_TYPES.map((type) => (
-                                        <SelectItem key={type.value} value={type.value}>
-                                            {type.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {error && (
-                            <div className="p-3 rounded-xl bg-red-50 border border-red-200">
-                                <p className="text-xs font-bold text-red-600 text-center">{error}</p>
-                            </div>
-                        )}
-
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full h-12 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold shadow-lg shadow-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSubmitting ? (
-                                <div className="flex items-center gap-2">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Criando conta...
-                                </div>
-                            ) : (
-                                <>
-                                    Criar Conta e Empresa
-                                    <ArrowRight className="w-5 h-5 ml-2" />
-                                </>
-                            )}
-                        </Button>
-                    </form>
-
-                    <div className="text-center space-y-2">
-                        <p className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400">
-                            Já tem uma conta?{" "}
-                            <button
-                                onClick={() => router.push("/login")}
-                                className="font-bold text-purple-600 hover:text-purple-700"
-                            >
-                                Fazer login
-                            </button>
-                        </p>
-                    </div>
-                </Card>
-            </motion.div>
+            </div>
         </div>
     )
 }
@@ -435,8 +473,8 @@ function RegisterContent() {
 export default function RegisterPage() {
     return (
         <Suspense fallback={
-            <div className="fixed inset-0 bg-white dark:bg-zinc-950 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+            <div className="fixed inset-0 bg-[#F8F9FF] flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-[#0D9488]" />
             </div>
         }>
             <RegisterContent />

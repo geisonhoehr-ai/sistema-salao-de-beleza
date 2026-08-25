@@ -39,18 +39,18 @@ export default function ReportsPage() {
         <div className="space-y-8 p-8 max-w-[1600px] mx-auto pb-32">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-                        <BarChart3 className="w-8 h-8 text-indigo-500 fill-indigo-500" />
+                    <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight flex items-center gap-3">
+                        <BarChart3 className="w-7 h-7 text-[#0D9488]" />
                         Relatórios Gerenciais
                     </h1>
-                    <p className="text-slate-500 text-lg">Inteligência de dados para tomada de decisão.</p>
+                    <p className="text-[#64748b] text-lg">Inteligência de dados para tomada de decisão.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" className="gap-2">
+                    <Button variant="outline" className="gap-2 border-[#E2E8F0] hover:bg-[#F8F9FF]">
                         <Calendar className="w-4 h-4" />
                         Este Mês
                     </Button>
-                    <Button className="gap-2 bg-slate-900 text-white hover:bg-slate-800">
+                    <Button className="gap-2 bg-[#0F172A] text-white hover:bg-[#1e293b]">
                         <Download className="w-4 h-4" />
                         Exportar PDF
                     </Button>
@@ -58,45 +58,45 @@ export default function ReportsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="bg-gradient-to-br from-blue-600 to-indigo-700 border-none text-white shadow-xl relative overflow-hidden">
+                <Card className="bg-[#0F172A] border-none text-white shadow-md rounded-xl">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-blue-100 font-medium text-sm flex items-center gap-2">
+                        <CardTitle className="text-[#94a3b8] font-medium text-sm flex items-center gap-2">
                             Ticket Médio
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black">R$ 145,00</div>
-                        <p className="text-blue-200 text-xs mt-1 flex items-center gap-1">
+                        <div className="text-3xl font-bold">R$ 145,00</div>
+                        <p className="text-[#0D9488] text-xs mt-1 flex items-center gap-1">
                             <ArrowUpRight className="w-3 h-3" /> +12% vs mês anterior
                         </p>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="border border-[#E2E8F0] shadow-sm rounded-xl">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-slate-500 font-medium text-sm">Taxa de Ocupação</CardTitle>
+                        <CardTitle className="text-[#64748b] font-medium text-sm">Taxa de Ocupação</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black text-slate-900 dark:text-white">78%</div>
-                        <p className="text-emerald-500 text-xs mt-1 flex items-center gap-1">
+                        <div className="text-3xl font-bold text-[#0F172A]">78%</div>
+                        <p className="text-[#0D9488] text-xs mt-1 flex items-center gap-1">
                             <ArrowUpRight className="w-3 h-3" /> Alta demanda (Sex/Sáb)
                         </p>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="border border-[#E2E8F0] shadow-sm rounded-xl">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-slate-500 font-medium text-sm">Novos Clientes</CardTitle>
+                        <CardTitle className="text-[#64748b] font-medium text-sm">Novos Clientes</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black text-slate-900 dark:text-white">45</div>
-                        <p className="text-slate-400 text-xs mt-1">15% do total de atendimentos</p>
+                        <div className="text-3xl font-bold text-[#0F172A]">45</div>
+                        <p className="text-[#64748b] text-xs mt-1">15% do total de atendimentos</p>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="border border-[#E2E8F0] shadow-sm rounded-xl">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-slate-500 font-medium text-sm">Retenção</CardTitle>
+                        <CardTitle className="text-[#64748b] font-medium text-sm">Retenção</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-black text-slate-900 dark:text-white">82%</div>

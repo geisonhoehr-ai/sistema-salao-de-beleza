@@ -100,20 +100,19 @@ export default function TenantDashboardPage() {
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tight text-gray-900 dark:text-white">Visão Geral</h2>
-                    <p className="text-gray-600 dark:text-zinc-400 font-medium mt-1">Bem-vindo(a) ao painel da {currentTenant.name}.</p>
+                    <h2 className="text-3xl font-bold tracking-tight text-[#0F172A]">Visão Geral</h2>
+                    <p className="text-[#64748b] font-medium mt-1">Bem-vindo(a) ao painel da {currentTenant.name}.</p>
                 </div>
 
-                <Card className="flex items-center gap-4 px-6 py-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-gray-100 dark:border-zinc-800 shadow-lg rounded-2xl relative overflow-hidden group hover:shadow-xl transition-all">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full -translate-y-16 translate-x-16 group-hover:scale-110 transition-transform" />
+                <Card className="flex items-center gap-4 px-6 py-4 bg-white border border-[#E2E8F0] shadow-sm rounded-xl relative overflow-hidden group hover:shadow-md transition-all">
                     <div className="flex-1 min-w-0 pr-4 relative z-10">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Seu Link de Agendamento</p>
-                        <p className="text-xs font-bold truncate bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{bookingUrl}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748b] mb-1">Seu Link de Agendamento</p>
+                        <p className="text-xs font-semibold truncate text-[#0D9488]">{bookingUrl}</p>
                     </div>
                     <Button
                         size="sm"
                         onClick={copyToClipboard}
-                        className="rounded-xl h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold shrink-0 shadow-lg relative z-10"
+                        className="rounded-lg h-10 px-4 bg-[#0F172A] hover:bg-[#1e293b] text-white font-medium shrink-0 shadow-sm relative z-10"
                     >
                         {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     </Button>
@@ -123,29 +122,29 @@ export default function TenantDashboardPage() {
             {/* Stats Grid */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
                 {realStats.map((stat, i) => (
-                    <Card key={i} className="p-6 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm hover:shadow-lg bg-white dark:bg-zinc-900 transition-all hover:border-gray-200">
+                    <Card key={i} className="p-6 rounded-xl border border-[#E2E8F0] shadow-sm hover:shadow-md bg-white transition-all hover:border-[#0D9488]/30">
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center">
-                                <stat.icon className="w-5 h-5 text-slate-600 dark:text-zinc-400" />
+                            <div className="w-10 h-10 rounded-lg bg-[#F1F5F9] flex items-center justify-center">
+                                <stat.icon className="w-5 h-5 text-[#0D9488]" />
                             </div>
-                            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{stat.label}</p>
+                            <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide">{stat.label}</p>
                         </div>
-                        <h3 className="text-2xl font-black text-slate-900 dark:text-white">{stat.value}</h3>
+                        <h3 className="text-2xl font-bold text-[#0F172A]">{stat.value}</h3>
                     </Card>
                 ))}
             </div>
 
             <div className="grid gap-8 lg:grid-cols-12">
                 {/* Visual Chart */}
-                <Card className="lg:col-span-8 rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-6 sm:p-8 space-y-8">
+                <Card className="lg:col-span-8 rounded-xl border border-[#E2E8F0] shadow-sm bg-white p-6 sm:p-8 space-y-8">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-xl font-black text-slate-900 dark:text-white">Performance de Vendas</h3>
-                            <p className="text-xs text-slate-500 font-medium">Movimentação financeira dos últimos 7 dias.</p>
+                            <h3 className="text-xl font-bold text-[#0F172A]">Performance de Vendas</h3>
+                            <p className="text-xs text-[#64748b] font-medium">Movimentação financeira dos últimos 7 dias.</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-slate-900" />
-                            <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-400">Total</span>
+                            <div className="w-3 h-3 rounded-full bg-[#0D9488]" />
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-[#64748b]">Total</span>
                         </div>
                     </div>
 
@@ -154,8 +153,8 @@ export default function TenantDashboardPage() {
                             <AreaChart data={chartData}>
                                 <defs>
                                     <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#0f172a" stopOpacity={0.4} />
-                                        <stop offset="95%" stopColor="#0f172a" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#0D9488" stopOpacity={0.4} />
+                                        <stop offset="95%" stopColor="#0D9488" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <XAxis
@@ -179,10 +178,10 @@ export default function TenantDashboardPage() {
                                     content={({ active, payload }) => {
                                         if (active && payload && payload.length) {
                                             return (
-                                                <div className="bg-slate-900 p-4 rounded-2xl shadow-2xl border-none">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{payload[0].payload.name}</p>
-                                                    <p className="text-xl font-black text-white">R$ {payload[0].value?.toLocaleString('pt-BR')}</p>
-                                                    <p className="text-[10px] font-bold text-emerald-400 uppercase mt-1">{payload[0].payload.customers} atendimentos</p>
+                                                <div className="bg-[#0F172A] p-4 rounded-lg shadow-lg border-none">
+                                                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wide mb-1">{payload[0].payload.name}</p>
+                                                    <p className="text-xl font-bold text-white">R$ {payload[0].value?.toLocaleString('pt-BR')}</p>
+                                                    <p className="text-[10px] font-semibold text-[#0D9488] uppercase mt-1">{payload[0].payload.customers} atendimentos</p>
                                                 </div>
                                             )
                                         }
@@ -192,8 +191,8 @@ export default function TenantDashboardPage() {
                                 <Area
                                     type="monotone"
                                     dataKey="total"
-                                    stroke="#0f172a"
-                                    strokeWidth={4}
+                                    stroke="#0D9488"
+                                    strokeWidth={3}
                                     fillOpacity={1}
                                     fill="url(#colorTotal)"
                                 />
@@ -204,35 +203,35 @@ export default function TenantDashboardPage() {
 
                 {/* Next Appointments */}
                 <div className="lg:col-span-4 space-y-8">
-                    <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-6 sm:p-8 min-h-[400px]">
-                        <div className="flex items-center justify-between mb-8">
-                            <h3 className="text-xl font-black text-slate-900 dark:text-white">Agenda Hoje</h3>
+                    <Card className="rounded-xl border border-[#E2E8F0] shadow-sm bg-white p-6 sm:p-8 min-h-[400px]">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-bold text-[#0F172A]">Agenda Hoje</h3>
                             <span className="relative flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0D9488] opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#0D9488]"></span>
                             </span>
                         </div>
 
-                        <div className="space-y-6">
+                        <div className="space-y-4">
                             {appointmentsToday.length === 0 ? (
                                 <div className="text-center py-10">
-                                    <Calendar className="w-10 h-10 text-slate-200 mx-auto mb-2" />
-                                    <p className="text-sm text-slate-400">Agenda livre hoje!</p>
+                                    <Calendar className="w-10 h-10 text-[#E2E8F0] mx-auto mb-2" />
+                                    <p className="text-sm text-[#64748b]">Agenda livre hoje!</p>
                                 </div>
                             ) : (
                                 topAppointments.map((apt, i) => (
-                                    <div key={i} className="flex items-center justify-between group cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center font-black text-slate-400">
+                                    <div key={i} className="flex items-center justify-between group cursor-pointer hover:bg-[#F8F9FF] p-3 rounded-lg transition-colors border border-transparent hover:border-[#E2E8F0]">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-lg bg-[#F1F5F9] flex items-center justify-center font-semibold text-[#0D9488]">
                                                 {apt.customerName?.charAt(0) || "C"}
                                             </div>
                                             <div>
-                                                <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate max-w-[120px]">{apt.customerName || "Cliente"}</h4>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[120px]">{apt.serviceName ?? "Serviço"}</p>
+                                                <h4 className="text-sm font-semibold text-[#0F172A] truncate max-w-[120px]">{apt.customerName || "Cliente"}</h4>
+                                                <p className="text-[10px] font-medium text-[#64748b] uppercase tracking-wide truncate max-w-[120px]">{apt.serviceName ?? "Serviço"}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-xs font-black text-slate-900 dark:text-white">
+                                            <p className="text-xs font-bold text-[#0F172A]">
                                                 {new Date(apt.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </div>
@@ -241,7 +240,7 @@ export default function TenantDashboardPage() {
                             )}
                         </div>
 
-                        <Button variant="ghost" className="w-full mt-8 rounded-2xl font-bold text-slate-400 hover:text-slate-900">
+                        <Button variant="ghost" className="w-full mt-6 rounded-lg font-medium text-[#0D9488] hover:text-[#0F766E] hover:bg-[#F8F9FF]">
                             Ver Agenda Completa <ChevronRight className="w-4 h-4 ml-1" />
                         </Button>
                     </Card>

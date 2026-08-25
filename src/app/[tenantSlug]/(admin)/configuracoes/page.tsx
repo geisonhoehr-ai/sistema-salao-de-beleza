@@ -94,12 +94,12 @@ export default function ConfiguracoesPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">Configurações</h2>
-                    <p className="text-slate-500 dark:text-zinc-400 font-medium mt-1">
+                    <h2 className="text-3xl font-bold tracking-tight text-[#0F172A]">Configurações</h2>
+                    <p className="text-[#64748b] font-medium mt-1">
                         Gerencie as regras operacionais e identidade da sua empresa.
                     </p>
                 </div>
-                <Button onClick={handleSave} size="lg" className="rounded-2xl bg-primary text-white font-bold shadow-xl shadow-primary/20 h-14 px-8">
+                <Button onClick={handleSave} size="lg" className="rounded-lg bg-[#0D9488] hover:bg-[#0F766E] text-white font-medium shadow-sm h-11 px-6">
                     <Save className="w-5 h-5 mr-2" /> Salvar Alterações
                 </Button>
             </div>
@@ -107,23 +107,23 @@ export default function ConfiguracoesPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
                     {/* Operational Hours */}
-                    <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-8">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-primary">
-                                <Clock className="w-6 h-6" />
+                    <Card className="rounded-xl border border-[#E2E8F0] shadow-sm bg-white p-6">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-11 h-11 rounded-lg bg-[#0D9488]/10 flex items-center justify-center text-[#0D9488]">
+                                <Clock className="w-5 h-5" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Horários de Funcionamento</h3>
-                                <p className="text-sm text-slate-500">Defina quando sua empresa está aberta para agendamentos.</p>
+                                <h3 className="text-lg font-bold text-[#0F172A]">Horários de Funcionamento</h3>
+                                <p className="text-sm text-[#64748b]">Defina quando sua empresa está aberta para agendamentos.</p>
                             </div>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             {weekDays.map((day) => (
-                                <div key={day.id} className="flex items-center justify-between p-4 rounded-3xl border border-slate-50 dark:border-zinc-800 hover:bg-slate-50/50 dark:hover:bg-zinc-800/50 transition-all">
+                                <div key={day.id} className="flex items-center justify-between p-3 rounded-lg border border-[#E2E8F0] hover:bg-[#F8F9FF] transition-all">
                                     <div className="flex items-center gap-4">
-                                        <Switch checked={day.active} />
-                                        <span className={cn("font-bold text-sm", day.active ? "text-slate-900 dark:text-white" : "text-slate-300")}>
+                                        <Switch checked={day.active} className="data-[state=checked]:bg-[#0D9488]" />
+                                        <span className={cn("font-medium text-sm", day.active ? "text-[#0F172A]" : "text-[#94a3b8]")}>
                                             {day.label}
                                         </span>
                                     </div>
@@ -131,13 +131,13 @@ export default function ConfiguracoesPage() {
                                         <Input
                                             disabled={!day.active}
                                             defaultValue={day.open}
-                                            className="w-20 h-10 rounded-xl text-center font-bold border-none bg-slate-100 dark:bg-zinc-800 focus:ring-primary"
+                                            className="w-20 h-9 rounded-md text-center font-medium border-[#E2E8F0] bg-[#F8F9FF] focus:ring-[#0D9488] focus:border-[#0D9488]"
                                         />
-                                        <span className="text-slate-300">até</span>
+                                        <span className="text-[#94a3b8]">até</span>
                                         <Input
                                             disabled={!day.active}
                                             defaultValue={day.close}
-                                            className="w-20 h-10 rounded-xl text-center font-bold border-none bg-slate-100 dark:bg-zinc-800 focus:ring-primary"
+                                            className="w-20 h-9 rounded-md text-center font-medium border-[#E2E8F0] bg-[#F8F9FF] focus:ring-[#0D9488] focus:border-[#0D9488]"
                                         />
                                     </div>
                                 </div>

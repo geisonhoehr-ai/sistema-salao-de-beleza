@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, ChevronDown, Check, Search, Command, Calendar, DollarSign, Settings, Timer, Megaphone, LogOut, User } from "lucide-react"
+import { Bell, ChevronDown, Check, Search, Calendar, DollarSign, Settings, Timer, Megaphone, LogOut } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useTenant } from "@/contexts/tenant-context"
@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { Badge } from "@/components/ui/badge"
 import { notifications as initialNotifications } from "@/mocks/notifications"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -24,22 +23,22 @@ export function Header() {
         clientes: "Clientes",
         servicos: "Serviços",
         galeria: "Galeria",
-        funcionarios: "Funcionários",
+        funcionarios: "Profissionais",
         financeiro: "Financeiro",
         estoque: "Estoque",
         crm: "Marketing & CRM",
         profissional: "Área do Profissional",
         perfil: "Perfil",
         configuracoes: "Configurações",
-        integracoes: "Integrações"
+        integracoes: "Integrações",
+        fechamento: "Fechamento Diário"
     }
 
-    const currentPath = pathSegments[0] || "dashboard"
+    const currentPath = pathSegments[1] || pathSegments[0] || "dashboard"
     const pageTitle = pageTitleMap[currentPath] || currentPath.charAt(0).toUpperCase() + currentPath.slice(1)
 
     const { currentTenant, setCurrentTenant, allTenants } = useTenant()
     const { isSuperAdmin, logout } = useAuth()
-    const [isTenantMenuOpen, setIsTenantMenuOpen] = useState(false)
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
     const [notifications, setNotifications] = useState(initialNotifications)
@@ -69,44 +68,40 @@ export function Header() {
         const tenant = allTenants.find(t => t.id === tenantId)
         if (!tenant) return
         setCurrentTenant(tenant)
-        setIsTenantMenuOpen(false)
+        setIsUserMenuOpen(false)
     }
 
     return (
-        <header className="h-20 sticky top-0 z-30 flex items-center justify-between px-8 bg-white/70 dark:bg-black/70 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/5">
+        <header className="h-16 sticky top-0 z-30 flex items-center justify-between px-6 bg-white border-b border-[#E2E8F0]">
             {/* Left: Page Title & Search Bar */}
-            <div className="flex items-center gap-8 flex-1">
-                <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white hidden md:block">{pageTitle}</h1>
+            <div className="flex items-center gap-6 flex-1">
+                <h1 className="text-lg font-semibold text-[#0F172A] hidden md:block">{pageTitle}</h1>
 
-                {/* Command+K Search Mockup */}
-                <div className="relative max-w-md w-full group hidden md:block">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                {/* Search Bar */}
+                <div className="relative max-w-md w-full hidden md:block">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
                     <input
                         type="text"
-                        placeholder="Buscar por clientes, funcionários..."
-                        className="w-full h-11 bg-slate-100 dark:bg-zinc-900 border-none rounded-2xl pl-11 pr-12 text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                        placeholder="Buscar clientes, profissionais..."
+                        className="w-full h-10 bg-[#F8F9FF] border border-[#E2E8F0] rounded-md pl-10 pr-4 text-sm focus:border-[#0D9488] focus:ring-1 focus:ring-[#0D9488] transition-all outline-none"
                     />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-1 bg-white dark:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 shadow-sm pointer-events-none">
-                        <Command className="w-3 h-3 text-slate-400" />
-                        <span className="text-[10px] font-bold text-slate-400">K</span>
-                    </div>
                 </div>
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2 pr-4 border-r border-slate-200 dark:border-zinc-800">
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1 pr-4 border-r border-[#E2E8F0]">
                     <ThemeToggle />
 
                     {/* Notifications */}
                     <div className="relative">
                         <button
                             onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                            className="relative w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors group"
+                            className="relative w-9 h-9 flex items-center justify-center rounded-md hover:bg-[#F1F5F9] transition-colors"
                         >
-                            <Bell className="w-5 h-5 text-slate-500 group-hover:text-primary transition-colors" />
+                            <Bell className="w-[18px] h-[18px] text-[#64748b]" />
                             {unreadCount > 0 && (
-                                <span className="absolute top-2 right-2 w-4 h-4 bg-primary text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-black">
+                                <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#0D9488] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                                     {unreadCount}
                                 </span>
                             )}
@@ -118,25 +113,23 @@ export function Header() {
                                 <>
                                     <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)} />
                                     <motion.div
-                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        className="absolute top-full right-0 mt-4 w-[400px] bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl border border-slate-100 dark:border-zinc-800 overflow-hidden z-50 p-6 space-y-4"
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 8 }}
+                                        className="absolute top-full right-0 mt-2 w-[360px] bg-white rounded-md shadow-lg border border-[#E2E8F0] overflow-hidden z-50"
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-lg font-black text-slate-900 dark:text-white">Notificações</h3>
-                                            <button onClick={markAllAsRead} className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">
-                                                Limpar Todas
+                                        <div className="flex items-center justify-between p-4 border-b border-[#E2E8F0]">
+                                            <h3 className="text-sm font-semibold text-[#0F172A]">Notificações</h3>
+                                            <button onClick={markAllAsRead} className="text-xs font-medium text-[#0D9488] hover:underline">
+                                                Marcar todas como lidas
                                             </button>
                                         </div>
 
-                                        <div className="max-h-[450px] overflow-y-auto space-y-2 -mx-2 px-2 scrollbar-none">
+                                        <div className="max-h-[400px] overflow-y-auto">
                                             {notifications.length === 0 ? (
-                                                <div className="py-20 text-center space-y-2">
-                                                    <div className="w-16 h-16 bg-slate-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto">
-                                                        <Bell className="w-8 h-8 text-slate-300" />
-                                                    </div>
-                                                    <p className="text-sm font-bold text-slate-400">Tudo limpo por aqui!</p>
+                                                <div className="py-12 text-center">
+                                                    <Bell className="w-8 h-8 text-[#E2E8F0] mx-auto mb-2" />
+                                                    <p className="text-sm text-[#94a3b8]">Nenhuma notificação</p>
                                                 </div>
                                             ) : (
                                                 notifications.map((n) => (
@@ -144,23 +137,23 @@ export function Header() {
                                                         key={n.id}
                                                         onClick={() => markAsRead(n.id)}
                                                         className={cn(
-                                                            "p-4 rounded-2xl flex gap-4 cursor-pointer transition-all group",
-                                                            !n.read ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-slate-50 dark:hover:bg-zinc-800/50"
+                                                            "p-4 flex gap-3 cursor-pointer transition-colors border-b border-[#F1F5F9] last:border-0",
+                                                            !n.read ? "bg-[#0D9488]/5" : "hover:bg-[#F8F9FF]"
                                                         )}
                                                     >
-                                                        <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center">
+                                                        <div className="w-9 h-9 rounded-md bg-[#F1F5F9] flex items-center justify-center flex-shrink-0">
                                                             {(() => {
                                                                 const Icon = getNotificationIcon(n.type)
-                                                                return <Icon className="w-5 h-5 text-primary" />
+                                                                return <Icon className="w-4 h-4 text-[#0D9488]" />
                                                             })()}
                                                         </div>
-                                                        <div className="flex-1 space-y-1">
-                                                            <div className="flex items-center justify-between">
-                                                                <p className="font-bold text-sm text-slate-900 dark:text-white leading-none">{n.title}</p>
-                                                                {!n.read && <div className="w-2 h-2 bg-primary rounded-full" />}
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <p className="text-sm font-medium text-[#0F172A] truncate">{n.title}</p>
+                                                                {!n.read && <div className="w-2 h-2 bg-[#0D9488] rounded-full flex-shrink-0 mt-1.5" />}
                                                             </div>
-                                                            <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed font-medium">{n.message}</p>
-                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                                                            <p className="text-xs text-[#64748b] mt-0.5 line-clamp-2">{n.message}</p>
+                                                            <p className="text-[10px] text-[#94a3b8] mt-1">
                                                                 {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: ptBR })}
                                                             </p>
                                                         </div>
@@ -179,16 +172,16 @@ export function Header() {
                 <div className="relative">
                     <button
                         onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                        className="flex items-center gap-3 p-1 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 hover:shadow-md transition-all group"
+                        className="flex items-center gap-2.5 py-1.5 px-2 rounded-md hover:bg-[#F1F5F9] transition-colors"
                     >
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-xs font-black shadow-lg" suppressHydrationWarning>
-                            {currentTenant.name.substring(0, 2).toUpperCase()}
+                        <div className="w-8 h-8 rounded-md bg-[#0F172A] flex items-center justify-center text-white text-xs font-semibold" suppressHydrationWarning>
+                            {currentTenant?.name?.substring(0, 2).toUpperCase() || 'TR'}
                         </div>
-                        <div className="text-left hidden lg:block pr-2" suppressHydrationWarning>
-                            <p className="text-xs font-black text-slate-900 dark:text-white leading-none mb-1">{currentTenant.name}</p>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{isSuperAdmin ? 'Super Admin' : 'Administrador'}</p>
+                        <div className="text-left hidden lg:block" suppressHydrationWarning>
+                            <p className="text-sm font-medium text-[#0F172A] leading-tight">{currentTenant?.name || 'Tratto'}</p>
+                            <p className="text-[10px] text-[#94a3b8]">{isSuperAdmin ? 'Super Admin' : 'Administrador'}</p>
                         </div>
-                        <ChevronDown className="w-4 h-4 text-slate-400 mr-2 group-hover:text-primary transition-colors" />
+                        <ChevronDown className="w-4 h-4 text-[#94a3b8]" />
                     </button>
 
                     <AnimatePresence>
@@ -196,24 +189,24 @@ export function Header() {
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
                                 <motion.div
-                                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                                    className="absolute right-0 mt-3 w-[280px] rounded-2xl bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 shadow-2xl z-50 overflow-hidden"
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 8 }}
+                                    className="absolute right-0 mt-2 w-[240px] rounded-md bg-white border border-[#E2E8F0] shadow-lg z-50 overflow-hidden"
                                 >
                                     {/* User Info */}
-                                    <div className="p-4 border-b border-slate-100 dark:border-zinc-800">
-                                        <p className="text-sm font-bold text-slate-900 dark:text-white">{currentTenant.name}</p>
-                                        <p className="text-xs text-slate-400">{isSuperAdmin ? 'Super Admin' : 'Administrador'}</p>
+                                    <div className="p-3 border-b border-[#E2E8F0]">
+                                        <p className="text-sm font-medium text-[#0F172A]">{currentTenant?.name}</p>
+                                        <p className="text-xs text-[#94a3b8]">{isSuperAdmin ? 'Super Admin' : 'Administrador'}</p>
                                     </div>
 
                                     {/* Tenant Selector (Super Admin only) */}
                                     {isSuperAdmin && allTenants.length > 1 && (
-                                        <div className="border-b border-slate-100 dark:border-zinc-800">
-                                            <p className="px-4 pt-3 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Trocar Empresa</p>
-                                            <div className="max-h-40 overflow-y-auto">
+                                        <div className="border-b border-[#E2E8F0]">
+                                            <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wide">Trocar Empresa</p>
+                                            <div className="max-h-32 overflow-y-auto">
                                                 {allTenants.map((tenant) => {
-                                                    const isActive = tenant.id === currentTenant.id
+                                                    const isActive = tenant.id === currentTenant?.id
                                                     return (
                                                         <button
                                                             key={tenant.id}
@@ -222,15 +215,15 @@ export function Header() {
                                                                 setIsUserMenuOpen(false)
                                                             }}
                                                             className={cn(
-                                                                "w-full text-left px-4 py-2 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors text-sm",
-                                                                isActive && "bg-primary/5"
+                                                                "w-full text-left px-3 py-2 flex items-center gap-2.5 hover:bg-[#F8F9FF] transition-colors text-sm",
+                                                                isActive && "bg-[#0D9488]/5"
                                                             )}
                                                         >
-                                                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold text-xs">
+                                                            <div className="w-6 h-6 rounded bg-[#0F172A] flex items-center justify-center text-white font-medium text-[10px]">
                                                                 {tenant.name.substring(0, 2).toUpperCase()}
                                                             </div>
-                                                            <span className="flex-1 truncate text-slate-700 dark:text-zinc-300">{tenant.name}</span>
-                                                            {isActive && <Check className="w-4 h-4 text-primary" />}
+                                                            <span className="flex-1 truncate text-[#64748b]">{tenant.name}</span>
+                                                            {isActive && <Check className="w-4 h-4 text-[#0D9488]" />}
                                                         </button>
                                                     )
                                                 })}
@@ -239,11 +232,11 @@ export function Header() {
                                     )}
 
                                     {/* Menu Actions */}
-                                    <div className="p-2">
+                                    <div className="p-1">
                                         <Link
-                                            href={`/${currentTenant.slug}/configuracoes`}
+                                            href={`/${currentTenant?.slug}/configuracoes`}
                                             onClick={() => setIsUserMenuOpen(false)}
-                                            className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+                                            className="flex items-center gap-2.5 px-3 py-2 rounded text-sm text-[#64748b] hover:bg-[#F8F9FF] hover:text-[#0F172A] transition-colors"
                                         >
                                             <Settings className="w-4 h-4" />
                                             Configurações
@@ -253,7 +246,7 @@ export function Header() {
                                                 setIsUserMenuOpen(false)
                                                 logout()
                                             }}
-                                            className="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                            className="flex items-center gap-2.5 w-full px-3 py-2 rounded text-sm text-red-600 hover:bg-red-50 transition-colors"
                                         >
                                             <LogOut className="w-4 h-4" />
                                             Sair
@@ -268,5 +261,3 @@ export function Header() {
         </header>
     )
 }
-
-

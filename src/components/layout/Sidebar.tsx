@@ -15,18 +15,12 @@ import {
     Scissors,
     UserCircle,
     LogOut,
-    Building2,
     DollarSign,
-    Package,
-    Smartphone,
     Menu,
     X,
-    Image as ImageIcon,
-    BarChart3,
-    Trophy,
-    CreditCard,
     Lock,
     ClipboardList,
+    ChevronRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -34,10 +28,9 @@ export function Sidebar() {
     const pathname = usePathname()
     const { logout } = useAuth()
     const { currentTenant } = useTenant()
-    const { checkPermission, isExpired } = useSubscription(currentTenant)
+    const { checkPermission } = useSubscription(currentTenant)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-    // Dynamic Menu Structure
     const slug = currentTenant?.slug || 'demo'
     const menuSections = [
         {
@@ -71,83 +64,90 @@ export function Sidebar() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="fixed top-4 left-4 z-50 md:hidden rounded-xl bg-white/90 dark:bg-black/90 backdrop-blur-sm shadow-lg"
+                className="fixed top-4 left-4 z-50 md:hidden rounded-md bg-white shadow-sm border border-[#E2E8F0]"
             >
                 {isMobileMenuOpen ? (
-                    <X className="w-5 h-5" />
+                    <X className="w-5 h-5 text-[#0F172A]" />
                 ) : (
-                    <Menu className="w-5 h-5" />
+                    <Menu className="w-5 h-5 text-[#0F172A]" />
                 )}
             </Button>
 
             {/* Overlay for mobile */}
             {isMobileMenuOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    className="fixed inset-0 bg-black/40 z-40 md:hidden"
                     onClick={() => setIsMobileMenuOpen(false)}
                 />
             )}
 
             {/* Sidebar */}
             <aside className={cn(
-                "w-64 h-screen sticky top-0 border-r border-black/5 dark:border-white/10 bg-white/70 dark:bg-black/70 backdrop-blur-xl flex flex-col z-40 transition-transform duration-300",
-                // Mobile: slide from left
+                "w-60 h-screen sticky top-0 border-r border-[#E2E8F0] bg-white flex flex-col z-40 transition-transform duration-300",
                 "fixed md:static",
                 isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
             )}>
                 {/* Logo Area */}
-                <div className="h-16 flex items-center px-6 border-b border-black/5 dark:border-white/10">
-                    <div className="flex items-center gap-2 text-primary">
-                        <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-                            <Scissors className="w-4 h-4 text-white" />
+                <div className="h-16 flex items-center px-5 border-b border-[#E2E8F0]">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-md bg-[#0F172A] flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">T</span>
                         </div>
-                        <span className="font-semibold text-lg tracking-tight text-foreground">Tratto</span>
+                        <div>
+                            <span className="font-semibold text-[#0F172A] text-sm">Tratto</span>
+                            <p className="text-[10px] text-[#64748b] font-medium truncate max-w-[140px]">
+                                {currentTenant?.name || 'Sistema de Gestão'}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 px-3 py-6 space-y-6 overflow-y-auto scrollbar-hide">
+                <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
                     {menuSections.map((section) => (
                         <div key={section.title}>
-                            <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            <p className="px-3 mb-2 text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wider">
                                 {section.title}
                             </p>
-                            <div className="space-y-1">
+                            <div className="space-y-0.5">
                                 {section.items.map((item) => {
                                     const isActive = pathname.startsWith(item.href)
-                                    // Subscription Check
                                     const isLocked = item.permission ? !checkPermission(item.permission) : false
                                     const Icon = item.icon
 
                                     return (
                                         <Link
                                             key={item.href}
-                                            href={isLocked ? '#' : item.href} // Disable link if locked
+                                            href={isLocked ? '#' : item.href}
                                             onClick={(e) => {
                                                 if (isLocked) {
                                                     e.preventDefault()
-                                                    // Trigger upgrade modal (future impl)
                                                     alert("Funcionalidade bloqueada no seu plano atual. Faça o upgrade!")
                                                 }
                                                 setIsMobileMenuOpen(false)
                                             }}
                                             className={cn(
-                                                "flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group relative select-none",
+                                                "flex items-center justify-between px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-150 group select-none",
                                                 isActive
-                                                    ? "bg-primary/10 text-primary shadow-sm"
-                                                    : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground",
-                                                isLocked && "opacity-60 cursor-not-allowed hover:bg-transparent"
+                                                    ? "bg-[#0D9488]/10 text-[#0D9488] border-l-2 border-[#0D9488] ml-[-1px]"
+                                                    : "text-[#64748b] hover:bg-[#F1F5F9] hover:text-[#0F172A]",
+                                                isLocked && "opacity-50 cursor-not-allowed hover:bg-transparent"
                                             )}
                                             suppressHydrationWarning
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <Icon className={cn("w-4 h-4 transition-colors", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                                            <div className="flex items-center gap-2.5">
+                                                <Icon className={cn(
+                                                    "w-4 h-4 transition-colors",
+                                                    isActive ? "text-[#0D9488]" : "text-[#94a3b8] group-hover:text-[#64748b]"
+                                                )} />
                                                 {item.label}
                                             </div>
 
-                                            {isLocked && (
+                                            {isLocked ? (
                                                 <Lock className="w-3 h-3 text-amber-500" />
-                                            )}
+                                            ) : isActive ? (
+                                                <ChevronRight className="w-3 h-3 text-[#0D9488]" />
+                                            ) : null}
                                         </Link>
                                     )
                                 })}
@@ -156,11 +156,23 @@ export function Sidebar() {
                     ))}
                 </nav>
 
-                {/* User / Logout */}
-                <div className="p-4 border-t border-black/5 dark:border-white/10">
+                {/* Settings & Logout */}
+                <div className="p-3 border-t border-[#E2E8F0] space-y-1">
+                    <Link
+                        href={`/${slug}/configuracoes`}
+                        className={cn(
+                            "flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-[13px] font-medium transition-colors",
+                            pathname.includes('/configuracoes')
+                                ? "bg-[#0D9488]/10 text-[#0D9488]"
+                                : "text-[#64748b] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
+                        )}
+                    >
+                        <Settings className="w-4 h-4" />
+                        Configurações
+                    </Link>
                     <button
                         onClick={logout}
-                        className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors"
+                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-[13px] font-medium text-[#64748b] hover:bg-red-50 hover:text-red-600 transition-colors"
                     >
                         <LogOut className="w-4 h-4" />
                         Sair
@@ -170,5 +182,3 @@ export function Sidebar() {
         </>
     )
 }
-
-

@@ -145,8 +145,8 @@ export default function IntegracoesPage() {
         <div className="max-w-6xl mx-auto space-y-10 pb-20">
             {/* Header */}
             <div>
-                <h2 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">Integrações</h2>
-                <p className="text-slate-500 dark:text-zinc-400 font-medium mt-1">
+                <h2 className="text-3xl font-bold tracking-tight text-[#0F172A]">Integrações</h2>
+                <p className="text-[#64748b] font-medium mt-1">
                     Conecte suas ferramentas favoritas para turbinar seu negócio.
                 </p>
             </div>
@@ -154,12 +154,12 @@ export default function IntegracoesPage() {
             {/* Payment Gateways */}
             <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
-                        <CreditCard className="w-6 h-6" />
+                    <div className="p-3 rounded-lg bg-[#0D9488]/10 text-[#0D9488]">
+                        <CreditCard className="w-5 h-5" />
                     </div>
                     <div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">Meios de Pagamento</h3>
-                        <p className="text-sm text-slate-500">Escolha como seus clientes pagam.</p>
+                        <h3 className="text-lg font-bold text-[#0F172A]">Meios de Pagamento</h3>
+                        <p className="text-sm text-[#64748b]">Escolha como seus clientes pagam.</p>
                     </div>
                 </div>
 
@@ -170,9 +170,9 @@ export default function IntegracoesPage() {
 
                         return (
                             <Card key={gateway.id} className={cn(
-                                "group border-2 transition-all duration-200 overflow-hidden",
-                                isExpanded ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-slate-200 dark:hover:border-zinc-800",
-                                "bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md"
+                                "group border transition-all duration-200 overflow-hidden rounded-xl",
+                                isExpanded ? "border-[#0D9488] ring-2 ring-[#0D9488]/20" : "border-[#E2E8F0] hover:border-[#0D9488]/30",
+                                "bg-white shadow-sm hover:shadow-md"
                             )}>
                                 <CardHeader className="p-6 pb-4">
                                     <div className="flex justify-between items-start mb-4">
