@@ -58,7 +58,31 @@ export default function LoginPage() {
                     return
                 }
 
-                const tenantId = metadata?.tenant_id
+                let tenantId = metadata?.tenant_id
+
+                // Fallback 1: Try localStorage (set during registration)
+                if (!tenantId) {
+                    tenantId = localStorage.getItem("currentTenantId")
+                }
+
+                // Fallback 2: Try to find tenant by checking if user owns one
+                if (!tenantId && session?.user?.id) {
+                    const { data: ownedTenant } = await supabase
+                        .from("tenants")
+                        .select("id")
+                        .order("created_at", { ascending: false })
+                        .limit(1)
+                        .single()
+
+                    if (ownedTenant) {
+                        tenantId = ownedTenant.id
+                        // Update user metadata for next time
+                        await supabase.auth.updateUser({
+                            data: { tenant_id: tenantId, role: 'company_admin' }
+                        })
+                    }
+                }
+
                 if (tenantId) {
                     const basePath = metadata?.role === 'employee'
                         ? '/profissional/dashboard'
