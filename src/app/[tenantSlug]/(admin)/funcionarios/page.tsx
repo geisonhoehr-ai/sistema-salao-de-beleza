@@ -53,6 +53,8 @@ import type { EmployeeRecord } from "@/types/catalog"
 import { UnavailabilityManager } from "@/components/employees/UnavailabilityManager"
 import { CommissionExceptionsManager } from "@/components/employees/CommissionExceptionsManager"
 import { AvatarUpload } from "@/components/employees/AvatarUpload"
+import { PermissionsManager } from "@/components/employees/PermissionsManager"
+import { type EmployeePermissions, DEFAULT_PERMISSIONS } from "@/lib/permissions"
 
 const weekDays = [
     { id: 'monday',    label: 'Segunda' },
@@ -75,6 +77,7 @@ type FormData = {
     workingHours: Record<string, { start: string; end: string }[]>
     commission: number
     acceptsOnlineBooking: boolean
+    permissions: EmployeePermissions
 }
 
 const defaultForm: FormData = {
@@ -88,6 +91,7 @@ const defaultForm: FormData = {
     workingHours: {},
     commission: 40,
     acceptsOnlineBooking: true,
+    permissions: DEFAULT_PERMISSIONS,
 }
 
 export default function FuncionariosPage() {
@@ -144,6 +148,7 @@ export default function FuncionariosPage() {
             working_hours: formData.workingHours,
             commission_rate: formData.commission,
             accepts_online_booking: formData.acceptsOnlineBooking,
+            permissions: formData.permissions,
             status: "active",
         }).select("id").single()
 
@@ -223,6 +228,7 @@ export default function FuncionariosPage() {
             working_hours: formData.workingHours,
             commission_rate: formData.commission,
             accepts_online_booking: formData.acceptsOnlineBooking,
+            permissions: formData.permissions,
             updated_at: new Date().toISOString(),
         }).eq("id", selectedEmployee.id).eq("tenant_id", tenantId)
 
@@ -271,6 +277,7 @@ export default function FuncionariosPage() {
             workingHours: employee.workingHours ?? {},
             commission: employee.commissionRate ?? 40,
             acceptsOnlineBooking: employee.acceptsOnlineBooking ?? true,
+            permissions: (employee as any).permissions ?? DEFAULT_PERMISSIONS,
         })
         setAvatarUrl(employee.avatarUrl ?? '')
         setShowEditEmployee(true)
@@ -605,10 +612,11 @@ export default function FuncionariosPage() {
             >
                 {showEditEmployee && selectedEmployee ? (
                     <Tabs defaultValue="basico" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="basico" type="button">Dados Básicos</TabsTrigger>
+                        <TabsList className="grid w-full grid-cols-4">
+                            <TabsTrigger value="basico" type="button">Dados</TabsTrigger>
+                            <TabsTrigger value="permissoes" type="button">Permissões</TabsTrigger>
                             <TabsTrigger value="bloqueios" type="button">Bloqueios</TabsTrigger>
-                            <TabsTrigger value="comissoes" type="button">Exceções Comissão</TabsTrigger>
+                            <TabsTrigger value="comissoes" type="button">Comissões</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="basico" className="space-y-6 max-h-[60vh] overflow-y-auto pr-4 scrollbar-thin mt-4">
@@ -787,6 +795,13 @@ export default function FuncionariosPage() {
                     </div>
                         </TabsContent>
 
+                        <TabsContent value="permissoes" className="mt-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin">
+                            <PermissionsManager
+                                permissions={formData.permissions}
+                                onChange={(permissions) => setFormData({ ...formData, permissions })}
+                            />
+                        </TabsContent>
+
                         <TabsContent value="bloqueios" className="mt-4">
                             <UnavailabilityManager
                                 tenantId={currentTenant.id}
@@ -922,6 +937,14 @@ export default function FuncionariosPage() {
                                     />
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Permissões de Acesso */}
+                        <div className="pt-6 border-t border-slate-100 dark:border-zinc-800">
+                            <PermissionsManager
+                                permissions={formData.permissions}
+                                onChange={(permissions) => setFormData({ ...formData, permissions })}
+                            />
                         </div>
                     </div>
                 )}
