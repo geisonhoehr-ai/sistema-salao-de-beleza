@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { ArrowRight, AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { supabase } from "@/lib/supabase"
 
 export default function LoginPage() {
     const [email, setEmail] = useState("")
@@ -20,6 +21,25 @@ export default function LoginPage() {
     const { login, user } = useAuth()
     const router = useRouter()
 
+    // Helper function to get tenant slug and redirect
+    const redirectToTenant = async (tenantId: string, basePath: string) => {
+        const { data: tenant } = await supabase
+            .from("tenants")
+            .select("slug")
+            .eq("id", tenantId)
+            .single()
+
+        if (tenant?.slug) {
+            localStorage.setItem("currentTenantId", tenantId)
+            localStorage.setItem("tenantSlug", tenant.slug)
+            window.location.href = `/${tenant.slug}${basePath}`
+        } else {
+            // Fallback if tenant not found
+            setError("Erro ao encontrar sua empresa. Contate o suporte.")
+            setIsLoading(false)
+        }
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError("")
@@ -29,35 +49,52 @@ export default function LoginPage() {
             const success = await login(email, password)
 
             if (success) {
-                setTimeout(() => {
-                    window.location.href = "/dashboard"
-                }, 100)
+                // Get fresh session to get user metadata
+                const { data: { session } } = await supabase.auth.getSession()
+                const metadata = session?.user?.user_metadata
+
+                if (metadata?.role === 'super_admin') {
+                    window.location.href = "/super-admin/dashboard"
+                    return
+                }
+
+                const tenantId = metadata?.tenant_id
+                if (tenantId) {
+                    const basePath = metadata?.role === 'employee'
+                        ? '/profissional/dashboard'
+                        : '/dashboard'
+                    await redirectToTenant(tenantId, basePath)
+                } else {
+                    setError("Conta não associada a uma empresa. Contate o suporte.")
+                    setIsLoading(false)
+                }
             } else {
                 setError("Email ou senha inválidos")
+                setIsLoading(false)
             }
         } catch (err) {
             setError("Erro ao fazer login. Tente novamente.")
-        } finally {
             setIsLoading(false)
         }
     }
 
     useEffect(() => {
-        if (user) {
-            switch (user.role) {
-                case 'super_admin':
+        const checkUserAndRedirect = async () => {
+            if (user) {
+                if (user.role === 'super_admin') {
                     router.push('/super-admin/dashboard')
-                    break
-                case 'company_admin':
-                    router.push('/dashboard')
-                    break
-                case 'employee':
-                    router.push('/profissional/dashboard')
-                    break
-                default:
-                    router.push('/dashboard')
+                    return
+                }
+
+                if (user.companyId) {
+                    const basePath = user.role === 'employee'
+                        ? '/profissional/dashboard'
+                        : '/dashboard'
+                    await redirectToTenant(user.companyId, basePath)
+                }
             }
         }
+        checkUserAndRedirect()
     }, [user, router])
 
     return (
