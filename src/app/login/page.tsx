@@ -65,13 +65,12 @@ export default function LoginPage() {
                     tenantId = localStorage.getItem("currentTenantId")
                 }
 
-                // Fallback 2: Try to find tenant by checking if user owns one
+                // Fallback 2: Try to find tenant by owner_id
                 if (!tenantId && session?.user?.id) {
                     const { data: ownedTenant } = await supabase
                         .from("tenants")
                         .select("id")
-                        .order("created_at", { ascending: false })
-                        .limit(1)
+                        .eq("owner_id", session.user.id)
                         .single()
 
                     if (ownedTenant) {

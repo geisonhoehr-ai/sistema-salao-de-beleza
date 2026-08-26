@@ -116,12 +116,53 @@ function RegisterContent() {
         setError("")
 
         try {
+            // 1. Generate slug first
+            const baseSlug = generateSlug(formData.businessName)
+            const uniqueSlug = await ensureUniqueSlug(baseSlug)
+
+            // 2. Create tenant FIRST (before user, to get tenant_id)
+            const tenantData: Record<string, unknown> = {
+                name: formData.businessName,
+                slug: uniqueSlug,
+                full_name: formData.businessName,
+                settings: {
+                    business_type: formData.businessType,
+                    description: `${formData.businessName} - ${BUSINESS_TYPES.find(t => t.value === formData.businessType)?.label}`,
+                },
+                theme: {
+                    primaryColor: "#0F172A",
+                    accentColor: "#0D9488",
+                },
+                plan_id: isAdminMode ? "pro" : "trial",
+                subscription_status: isAdminMode ? "active" : "trialing",
+            }
+
+            if (!isAdminMode) {
+                tenantData.trial_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            }
+
+            const { data: tenant, error: tenantError } = await supabase
+                .from("tenants")
+                .insert(tenantData)
+                .select()
+                .single()
+
+            if (tenantError || !tenant) {
+                console.error("Tenant creation error:", tenantError)
+                setError(`Erro ao criar empresa: ${tenantError?.message || "Tente novamente."}`)
+                setIsSubmitting(false)
+                return
+            }
+
+            // 3. Create user WITH tenant_id already in metadata
             const { data: authData, error: signUpError } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
                 options: {
                     data: {
                         full_name: formData.userName,
+                        role: "company_admin",
+                        tenant_id: tenant.id,
                     },
                     emailRedirectTo: `${window.location.origin}/auth/callback`,
                 }
@@ -129,85 +170,52 @@ function RegisterContent() {
 
             if (signUpError) {
                 console.error("Signup error:", signUpError)
+                // Rollback: delete the tenant we just created
+                await supabase.from("tenants").delete().eq("id", tenant.id)
                 setError(signUpError.message || "Erro ao criar conta")
                 setIsSubmitting(false)
                 return
             }
 
             if (!authData.user) {
+                // Rollback
+                await supabase.from("tenants").delete().eq("id", tenant.id)
                 setError("Erro ao criar usuário")
                 setIsSubmitting(false)
                 return
             }
 
-            if (authData.session) {
-                const baseSlug = generateSlug(formData.businessName)
-                const uniqueSlug = await ensureUniqueSlug(baseSlug)
+            // 4. Update tenant with owner_id
+            await supabase
+                .from("tenants")
+                .update({ owner_id: authData.user.id })
+                .eq("id", tenant.id)
 
-                const tenantData: Record<string, unknown> = {
-                    name: formData.businessName,
-                    slug: uniqueSlug,
-                    full_name: formData.businessName,
-                    settings: {
-                        business_type: formData.businessType,
-                        description: `${formData.businessName} - ${BUSINESS_TYPES.find(t => t.value === formData.businessType)?.label}`,
-                    },
-                    theme: {
-                        primaryColor: "#0F172A",
-                        accentColor: "#0D9488",
-                    },
-                    plan_id: isAdminMode ? "pro" : "trial",
-                    subscription_status: isAdminMode ? "active" : "trialing",
-                }
-
-                if (!isAdminMode) {
-                    tenantData.trial_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-                }
-
-                const { data: tenant, error: tenantError } = await supabase
-                    .from("tenants")
-                    .insert(tenantData)
-                    .select()
-                    .single()
-
-                if (tenantError || !tenant) {
-                    console.error("Tenant creation error:", tenantError)
-                    await supabase.auth.signOut()
-                    setError(`Erro ao criar empresa: ${tenantError?.message || "Tente novamente."}`)
-                    setIsSubmitting(false)
-                    return
-                }
-
-                const { error: updateError } = await supabase.auth.updateUser({
-                    data: {
-                        full_name: formData.userName,
-                        role: "company_admin",
-                        tenant_id: tenant.id,
-                    }
+            // 5. Create app_users profile
+            const { error: profileError } = await supabase
+                .from("app_users")
+                .insert({
+                    id: authData.user.id,
+                    full_name: formData.userName,
                 })
 
-                if (updateError) {
-                    console.error("Error updating user metadata:", updateError)
-                }
+            if (profileError) {
+                console.error("Profile creation error:", profileError)
+            }
 
-                const { error: profileError } = await supabase
-                    .from("app_users")
-                    .insert({
-                        id: authData.user.id,
-                        full_name: formData.userName,
-                    })
+            // 6. Save to localStorage
+            localStorage.setItem("currentTenantId", tenant.id)
+            localStorage.setItem("tenantSlug", tenant.slug)
 
-                if (profileError) {
-                    console.error("Profile creation error:", profileError)
-                }
-
-                localStorage.setItem("currentTenantId", tenant.id)
-                localStorage.setItem("tenantSlug", tenant.slug)
-
-                // Redirect to onboarding to complete business setup
+            // 7. Check if we have a session (auto-confirm enabled)
+            if (authData.session) {
+                // Direct redirect to onboarding
                 router.push(`/${tenant.slug}/onboarding`)
             } else {
+                // Need email confirmation - save pending data
                 const pendingData = {
+                    tenantId: tenant.id,
+                    tenantSlug: tenant.slug,
                     userId: authData.user.id,
                     email: formData.email,
                     userName: formData.userName,
@@ -216,7 +224,6 @@ function RegisterContent() {
                     isAdminMode: isAdminMode,
                 }
                 localStorage.setItem("pendingRegistration", JSON.stringify(pendingData))
-
                 router.push("/verify-email")
             }
 
