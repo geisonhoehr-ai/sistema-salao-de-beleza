@@ -90,6 +90,18 @@ export function Header() {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-4">
+                {/* Tenant Badge - Trinks Style */}
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#FFF7ED] border border-[#FDBA74] rounded-full">
+                    <div className="w-5 h-5 rounded-full bg-[#F97316] flex items-center justify-center">
+                        <span className="text-white text-[10px] font-bold">
+                            {currentTenant?.name?.substring(0, 1).toUpperCase() || 'T'}
+                        </span>
+                    </div>
+                    <span className="text-[12px] font-medium text-[#EA580C] max-w-[120px] truncate">
+                        {currentTenant?.name || 'Tratto'}
+                    </span>
+                </div>
+
                 <div className="flex items-center gap-1 pr-4 border-r border-[#E2E8F0]">
                     <ThemeToggle />
 

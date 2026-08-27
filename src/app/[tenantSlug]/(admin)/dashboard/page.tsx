@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { useTenant } from "@/contexts/tenant-context"
+import { useAuth } from "@/contexts/auth-context"
 import { Card } from "@/components/ui/card"
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import {
@@ -13,19 +14,31 @@ import {
     Copy,
     Check,
     ChevronRight,
+    Scissors,
+    UserPlus,
+    Clock,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn, formatCurrency } from "@/lib/utils"
-// Note: These components might need adaptation if they use specific contexts, checking them later if needed
-// For now, I'll comment out complex sub-components to ensure the page loads, and add them back progressively or replace with simple UI
-// import { QuickActions } from "@/components/QuickActions"
-// import { DailyGoals } from "@/components/DailyGoals"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import Link from "next/link"
 
-import { useTenantAppointments } from "@/hooks/useTenantRecords"
+import { useTenantAppointments, useTenantServices, useTenantEmployees } from "@/hooks/useTenantRecords"
+
+// Helper to get greeting based on time
+function getGreeting(): string {
+    const hour = new Date().getHours()
+    if (hour < 12) return "Bom dia"
+    if (hour < 18) return "Boa tarde"
+    return "Boa noite"
+}
 
 export default function TenantDashboardPage() {
     const { currentTenant } = useTenant()
+    const { user } = useAuth()
+    const [currentDate, setCurrentDate] = useState<Date>(new Date())
 
     // If we don't have a tenant yet (loading), show skeleton
     if (!currentTenant) {
@@ -33,7 +46,45 @@ export default function TenantDashboardPage() {
     }
 
     const { data: appointmentRecords, loading: isLoading } = useTenantAppointments(currentTenant.id)
+    const { data: serviceRecords } = useTenantServices(currentTenant.id)
+    const { data: employeeRecords } = useTenantEmployees(currentTenant.id)
     const [copied, setCopied] = useState(false)
+
+    // Update date every minute
+    useEffect(() => {
+        const interval = setInterval(() => setCurrentDate(new Date()), 60000)
+        return () => clearInterval(interval)
+    }, [])
+
+    // Get user's first name
+    const userName = user?.user_metadata?.name?.split(' ')[0] ||
+        user?.email?.split('@')[0] ||
+        'Gestor'
+
+    // Onboarding checklist
+    const onboardingSteps = [
+        {
+            number: 1,
+            title: "Cadastre clientes e fidelize-os",
+            href: `/${currentTenant.slug}/clientes`,
+            completed: (appointmentRecords?.length || 0) > 0 || false,
+        },
+        {
+            number: 2,
+            title: "Realize seu primeiro agendamento",
+            href: `/${currentTenant.slug}/agenda`,
+            completed: (appointmentRecords?.length || 0) > 0,
+        },
+        {
+            number: 3,
+            title: "Cadastre serviços e venda mais",
+            href: `/${currentTenant.slug}/servicos`,
+            completed: (serviceRecords?.length || 0) > 0,
+        },
+    ]
+
+    const completedSteps = onboardingSteps.filter(s => s.completed).length
+    const showOnboarding = completedSteps < 3
 
     // Calculate Real Stats
     const today = new Date()
@@ -97,27 +148,108 @@ export default function TenantDashboardPage() {
 
     return (
         <div className="space-y-8 pb-10 max-w-[1600px] mx-auto">
-            {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-[#0F172A]">Visão Geral</h2>
-                    <p className="text-[#64748b] font-medium mt-1">Bem-vindo(a) ao painel da {currentTenant.name}.</p>
-                </div>
-
-                <Card className="flex items-center gap-4 px-6 py-4 bg-white border border-[#E2E8F0] shadow-sm rounded-xl relative overflow-hidden group hover:shadow-md transition-all">
-                    <div className="flex-1 min-w-0 pr-4 relative z-10">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748b] mb-1">Seu Link de Agendamento</p>
-                        <p className="text-xs font-semibold truncate text-[#0D9488]">{bookingUrl}</p>
-                    </div>
-                    <Button
-                        size="sm"
-                        onClick={copyToClipboard}
-                        className="rounded-lg h-10 px-4 bg-[#0F172A] hover:bg-[#1e293b] text-white font-medium shrink-0 shadow-sm relative z-10"
-                    >
-                        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    </Button>
-                </Card>
+            {/* Personalized Greeting - Trinks Style */}
+            <div className="text-center py-6">
+                <h1 className="text-2xl md:text-3xl font-bold text-[#0F172A]">
+                    {getGreeting()}, {userName}
+                </h1>
+                <p className="text-[#64748b] font-medium mt-1 capitalize">
+                    {format(currentDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                </p>
             </div>
+
+            {/* Onboarding Section - Trinks Style */}
+            {showOnboarding && (
+                <div className="grid md:grid-cols-2 gap-6">
+                    <Card className="p-6 rounded-xl border border-[#E2E8F0] shadow-sm bg-white">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-[#0F172A]">Comece por aqui</h3>
+                            <div className="flex gap-1">
+                                {onboardingSteps.map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className={cn(
+                                            "w-2 h-2 rounded-full",
+                                            i < completedSteps ? "bg-[#F97316]" : "bg-[#E2E8F0]"
+                                        )}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            {onboardingSteps.map((step) => (
+                                <Link
+                                    key={step.number}
+                                    href={step.href}
+                                    className={cn(
+                                        "flex items-center gap-4 p-3 rounded-lg border transition-all",
+                                        step.completed
+                                            ? "border-green-200 bg-green-50/50"
+                                            : "border-[#FDBA74] bg-[#FFF7ED] hover:bg-[#FFEDD5]"
+                                    )}
+                                >
+                                    <span className={cn(
+                                        "w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold",
+                                        step.completed
+                                            ? "bg-green-500 text-white"
+                                            : "bg-[#F97316] text-white"
+                                    )}>
+                                        {step.completed ? <Check className="w-4 h-4" /> : step.number}
+                                    </span>
+                                    <span className={cn(
+                                        "text-sm font-medium",
+                                        step.completed ? "text-green-700 line-through" : "text-[#9A3412]"
+                                    )}>
+                                        {step.title}
+                                    </span>
+                                </Link>
+                            ))}
+                        </div>
+                    </Card>
+
+                    {/* Booking Link Card */}
+                    <Card className="p-6 rounded-xl border border-[#E2E8F0] shadow-sm bg-white flex flex-col justify-between">
+                        <div>
+                            <h3 className="text-lg font-bold text-[#0F172A] mb-2">Vamos crescer juntos</h3>
+                            <p className="text-sm text-[#64748b]">
+                                Compartilhe seu link de agendamento e comece a receber clientes online!
+                            </p>
+                        </div>
+                        <div className="mt-4 flex items-center gap-3 p-3 bg-[#F8F9FF] rounded-lg border border-[#E2E8F0]">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748b] mb-1">Seu Link</p>
+                                <p className="text-xs font-semibold truncate text-[#0D9488]">{bookingUrl}</p>
+                            </div>
+                            <Button
+                                size="sm"
+                                onClick={copyToClipboard}
+                                className="rounded-lg h-10 px-4 bg-[#F97316] hover:bg-[#EA580C] text-white font-medium shrink-0 shadow-sm"
+                            >
+                                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            </Button>
+                        </div>
+                    </Card>
+                </div>
+            )}
+
+            {/* Header - Simplified when onboarding is hidden */}
+            {!showOnboarding && (
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <Card className="flex items-center gap-4 px-6 py-4 bg-white border border-[#E2E8F0] shadow-sm rounded-xl relative overflow-hidden group hover:shadow-md transition-all w-full lg:w-auto">
+                        <div className="flex-1 min-w-0 pr-4 relative z-10">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748b] mb-1">Seu Link de Agendamento</p>
+                            <p className="text-xs font-semibold truncate text-[#0D9488]">{bookingUrl}</p>
+                        </div>
+                        <Button
+                            size="sm"
+                            onClick={copyToClipboard}
+                            className="rounded-lg h-10 px-4 bg-[#F97316] hover:bg-[#EA580C] text-white font-medium shrink-0 shadow-sm relative z-10"
+                        >
+                            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        </Button>
+                    </Card>
+                </div>
+            )}
 
             {/* Stats Grid */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
