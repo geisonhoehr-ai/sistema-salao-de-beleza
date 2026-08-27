@@ -173,7 +173,7 @@ export function ImportWizard({ tenantId, type, onClose, onComplete }: ImportWiza
                   <input
                     id="file-upload"
                     type="file"
-                    accept=".csv,.xlsx,.xls"
+                    accept=".csv,.xlsx"
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     onChange={(e) => {
                       console.log('📄 File selected!', e.target.files?.[0]?.name)

@@ -49,7 +49,7 @@ export function useImport(tenantId: string) {
       let parsedData: ParsedData
 
       // Detectar formato por extensão
-      const isXLSX = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
+      const isXLSX = file.name.endsWith('.xlsx')
 
       if (isXLSX) {
         parsedData = await parseXLSX(file, type || 'clientes')
@@ -119,7 +119,7 @@ export function useImport(tenantId: string) {
       console.log('📝 Processing type:', type, 'file:', file.name)
 
       // Re-parse arquivo
-      const isXLSX = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
+      const isXLSX = file.name.endsWith('.xlsx')
       const parsedData = isXLSX
         ? await parseXLSX(file, type)
         : await parseCSV(file, type)
