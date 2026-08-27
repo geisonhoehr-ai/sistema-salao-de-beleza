@@ -1,4 +1,5 @@
-import * as XLSX from 'xlsx'
+import readXlsxFile from 'read-excel-file'
+import writeXlsxFile, { type Row as ExcelRow } from 'write-excel-file'
 import type { ParsedData, ImportEntityType } from '@/types/import'
 
 interface ParseOptions {
@@ -14,73 +15,73 @@ export async function parseXLSX(
   type: ImportEntityType,
   options?: ParseOptions
 ): Promise<ParsedData> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
+  try {
+    const jsonData = await readXlsxFile(file, {
+      sheet: options?.sheetName,
+      trim: true
+    })
 
-    reader.onload = (event) => {
-      try {
-        const data = event.target?.result
-        const workbook = XLSX.read(data, { type: 'binary' })
-
-        // Pegar primeira sheet ou sheet especificada
-        const sheetName = options?.sheetName ?? workbook.SheetNames[0]
-        const worksheet = workbook.Sheets[sheetName]
-
-        // Converter para JSON
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-          header: 1,
-          defval: '',
-          blankrows: false
-        }) as any[][]
-
-        if (jsonData.length === 0) {
-          reject(new Error('Planilha vazia'))
-          return
-        }
-
-        // Detectar número de linhas a pular
-        const skipRows = options?.skipRows ?? (type === 'clientes' ? 6 : 0)
-
-        // Primeira linha após skip é o header
-        const headers = jsonData[skipRows].map((h: any) => String(h).trim())
-
-        // Linhas de dados
-        const rows = jsonData.slice(skipRows + 1).map((row) => {
-          const obj: any = {}
-          headers.forEach((header, index) => {
-            obj[header] = row[index] !== undefined ? String(row[index]).trim() : ''
-          })
-          return obj
-        })
-
-        resolve({
-          headers,
-          rows
-        })
-      } catch (error) {
-        reject(new Error(`Erro ao fazer parse do XLSX: ${(error as Error).message}`))
-      }
+    if (jsonData.length === 0) {
+      throw new Error('Planilha vazia')
     }
 
-    reader.onerror = () => {
-      reject(new Error('Erro ao ler arquivo'))
+    // Detectar número de linhas a pular
+    const skipRows = options?.skipRows ?? (type === 'clientes' ? 6 : 0)
+    const headerRow = jsonData[skipRows]
+
+    if (!headerRow) {
+      throw new Error('Cabeçalho da planilha não encontrado')
     }
 
-    reader.readAsBinaryString(file)
-  })
+    // Primeira linha após skip é o header
+    const headers = headerRow.map((h) => String(h ?? '').trim())
+
+    // Linhas de dados
+    const rows = jsonData.slice(skipRows + 1).map((row) => {
+      const obj: any = {}
+      headers.forEach((header, index) => {
+        obj[header] = row[index] !== undefined && row[index] !== null ? String(row[index]).trim() : ''
+      })
+      return obj
+    })
+
+    return {
+      headers,
+      rows
+    }
+  } catch (error) {
+    throw new Error(`Erro ao fazer parse do XLSX: ${(error as Error).message}`)
+  }
 }
 
 /**
  * Exporta dados para XLSX
  */
-export function exportToXLSX(data: any[], headers: string[], filename: string): void {
-  // Criar worksheet a partir dos dados
-  const ws = XLSX.utils.json_to_sheet(data, { header: headers })
+export async function exportToXLSX(data: any[], headers: string[], filename: string): Promise<void> {
+  const rows: ExcelRow[] = [
+    headers.map((header) => ({ value: header, fontWeight: 'bold' })),
+    ...data.map((item) =>
+      headers.map((header) => {
+        const value = item[header]
 
-  // Criar workbook
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Dados')
+        if (
+          value === null ||
+          value === undefined ||
+          typeof value === 'string' ||
+          typeof value === 'number' ||
+          typeof value === 'boolean' ||
+          value instanceof Date
+        ) {
+          return { value: value ?? '' }
+        }
 
-  // Gerar arquivo e download
-  XLSX.writeFile(wb, filename)
+        return { value: String(value) }
+      })
+    )
+  ]
+
+  await writeXlsxFile(rows, {
+    fileName: filename,
+    sheet: 'Dados'
+  })
 }

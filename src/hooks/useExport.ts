@@ -203,7 +203,7 @@ export function useExport(tenantId: string) {
         filename = `profissionais_${new Date().toISOString().split('T')[0]}.xlsx`
       }
 
-      exportToXLSX(data, headers, filename)
+      await exportToXLSX(data, headers, filename)
     } catch (err) {
       setError((err as Error).message)
     } finally {
