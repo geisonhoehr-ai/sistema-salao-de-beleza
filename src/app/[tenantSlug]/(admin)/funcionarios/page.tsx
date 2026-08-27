@@ -329,7 +329,7 @@ export default function FuncionariosPage() {
                     />
                     <Button
                         onClick={() => setShowNewEmployee(true)}
-                        className="rounded-lg h-11 px-5 bg-[#0D9488] hover:bg-[#0F766E] text-white font-medium transition-all shadow-sm"
+                        className="rounded-lg h-11 px-5 bg-[#F97316] hover:bg-[#EA580C] text-white font-medium transition-all shadow-sm"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Novo Profissional
@@ -345,7 +345,7 @@ export default function FuncionariosPage() {
                         placeholder="Buscar por nome ou especialidade..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-10 pl-11 bg-[#F8F9FF] border-[#E2E8F0] rounded-lg font-medium focus:border-[#0D9488] focus:ring-[#0D9488]"
+                        className="h-10 pl-11 bg-[#F8F9FF] border-[#E2E8F0] rounded-lg font-medium focus:border-[#F97316] focus:ring-[#F97316]"
                     />
                 </div>
                 <div className="flex gap-4 items-center">
@@ -356,7 +356,7 @@ export default function FuncionariosPage() {
                             onClick={() => setViewMode('grid')}
                             className={cn(
                                 "rounded-md h-8 w-8 p-0 transition-all",
-                                viewMode === 'grid' ? "bg-white shadow-sm text-[#0D9488]" : "text-[#64748b]"
+                                viewMode === 'grid' ? "bg-white shadow-sm text-[#F97316]" : "text-[#64748b]"
                             )}
                         >
                             <LayoutGrid className="w-4 h-4" />
@@ -367,7 +367,7 @@ export default function FuncionariosPage() {
                             onClick={() => setViewMode('list')}
                             className={cn(
                                 "rounded-md h-8 w-8 p-0 transition-all",
-                                viewMode === 'list' ? "bg-white shadow-sm text-[#0D9488]" : "text-[#64748b]"
+                                viewMode === 'list' ? "bg-white shadow-sm text-[#F97316]" : "text-[#64748b]"
                             )}
                         >
                             <ListIcon className="w-4 h-4" />
@@ -393,11 +393,11 @@ export default function FuncionariosPage() {
 
             {/* Error State */}
             {!loading && loadError && (
-                <div className="flex flex-col items-center justify-center py-16 text-center bg-red-50 dark:bg-red-900/10 rounded-3xl">
+                <div className="flex flex-col items-center justify-center py-16 text-center bg-red-50 rounded-xl border border-red-100">
                     <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-                    <p className="text-red-600 dark:text-red-400 font-bold mb-2">Erro ao carregar profissionais</p>
+                    <p className="text-red-600 font-bold mb-2">Erro ao carregar profissionais</p>
                     <p className="text-red-500/70 text-sm mb-4">{loadError}</p>
-                    <Button onClick={refetch} variant="outline" className="rounded-xl">
+                    <Button onClick={refetch} variant="outline" className="rounded-lg border-red-200 text-red-600 hover:bg-red-50">
                         <RefreshCw className="w-4 h-4 mr-2" /> Tentar novamente
                     </Button>
                 </div>
@@ -416,26 +416,33 @@ export default function FuncionariosPage() {
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ delay: idx * 0.05 }}
                             >
-                                <Card className="group relative overflow-hidden rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-8 hover:shadow-2xl transition-all duration-300">
-                                    <div className="space-y-6">
+                                <Card className="group relative overflow-hidden rounded-xl border border-[#E2E8F0] shadow-sm bg-white p-5 hover:shadow-md hover:border-[#F97316]/30 transition-all duration-200">
+                                    <div className="space-y-4">
+                                        {/* Header: Avatar + Actions */}
                                         <div className="flex justify-between items-start">
-                                            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-2xl group-hover:scale-110 transition-transform overflow-hidden">
-                                                {employee.avatarUrl ? (
-                                                    <img
-                                                        src={employee.avatarUrl}
-                                                        alt={employee.fullName}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                ) : (
-                                                    employee.fullName.charAt(0)
-                                                )}
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-14 h-14 rounded-xl bg-[#FFF7ED] flex items-center justify-center text-[#F97316] font-bold text-xl overflow-hidden flex-shrink-0">
+                                                    {employee.avatarUrl ? (
+                                                        <img
+                                                            src={employee.avatarUrl}
+                                                            alt={employee.fullName}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        employee.fullName.charAt(0).toUpperCase()
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h3 className="font-bold text-[#0F172A] truncate">{employee.fullName}</h3>
+                                                    <p className="text-xs text-[#64748b] truncate">{employee.email}</p>
+                                                </div>
                                             </div>
-                                            <div className="flex gap-2">
+                                            <div className="flex gap-1">
                                                 <Button
                                                     onClick={() => openEditDialog(employee)}
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="rounded-xl h-10 w-10 bg-slate-50 dark:bg-zinc-800/50 hover:bg-primary hover:text-white transition-all"
+                                                    className="rounded-lg h-8 w-8 text-[#64748b] hover:bg-[#F8F9FF] hover:text-[#F97316] transition-all"
                                                 >
                                                     <Edit className="w-4 h-4" />
                                                 </Button>
@@ -446,57 +453,58 @@ export default function FuncionariosPage() {
                                                     }}
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="rounded-xl h-10 w-10 bg-slate-50 dark:bg-zinc-800/50 hover:bg-red-500 hover:text-white transition-all"
+                                                    className="rounded-lg h-8 w-8 text-[#64748b] hover:bg-red-50 hover:text-red-500 transition-all"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-1">
-                                            <h3 className="text-xl font-black text-slate-900 dark:text-white">{employee.fullName}</h3>
+                                        {/* Specialties */}
+                                        {(employee.specialties ?? []).length > 0 && (
                                             <div className="flex flex-wrap gap-1">
-                                                {(employee.specialties ?? []).map(specId => {
+                                                {(employee.specialties ?? []).slice(0, 3).map(specId => {
                                                     const service = services.find(s => s.id === specId)
                                                     return (
-                                                        <Badge key={specId} variant="secondary" className="bg-slate-100 dark:bg-zinc-800 text-[10px] py-0 border-none">
+                                                        <Badge key={specId} variant="secondary" className="bg-[#F1F5F9] text-[#64748b] text-[10px] py-0.5 px-2 border-none font-medium">
                                                             {service?.name || specId}
                                                         </Badge>
                                                     )
                                                 })}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-3 py-6 border-y border-slate-100 dark:border-zinc-800">
-                                            <div className="flex items-center gap-3 text-sm font-medium text-slate-500 dark:text-zinc-400">
-                                                <Mail className="w-4 h-4" />
-                                                <span className="truncate">{employee.email}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3 text-sm font-medium text-slate-500 dark:text-zinc-400">
-                                                    <Percent className="w-4 h-4 text-emerald-500" />
-                                                    Comissão
-                                                </div>
-                                                <span className="font-bold text-slate-900 dark:text-white">{employee.commissionRate ?? 0}%</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex gap-2">
-                                                {employee.acceptsOnlineBooking && (
-                                                    <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-bold text-[9px] uppercase tracking-tighter">
-                                                        Booking Ativo
+                                                {(employee.specialties ?? []).length > 3 && (
+                                                    <Badge variant="secondary" className="bg-[#F1F5F9] text-[#64748b] text-[10px] py-0.5 px-2 border-none font-medium">
+                                                        +{(employee.specialties ?? []).length - 3}
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
+                                        )}
+
+                                        {/* Info Row */}
+                                        <div className="flex items-center justify-between py-3 border-y border-[#E2E8F0]">
+                                            <div className="flex items-center gap-2 text-sm text-[#64748b]">
+                                                <Percent className="w-4 h-4 text-[#22C55E]" />
+                                                <span>Comissão</span>
+                                            </div>
+                                            <span className="font-bold text-[#0F172A]">{employee.commissionRate ?? 0}%</span>
+                                        </div>
+
+                                        {/* Footer */}
+                                        <div className="flex items-center justify-between">
+                                            {employee.acceptsOnlineBooking ? (
+                                                <Badge className="bg-[#DCFCE7] text-[#22C55E] border-none font-semibold text-[10px] uppercase">
+                                                    Booking Ativo
+                                                </Badge>
+                                            ) : (
+                                                <Badge className="bg-[#F1F5F9] text-[#94a3b8] border-none font-semibold text-[10px] uppercase">
+                                                    Booking Inativo
+                                                </Badge>
+                                            )}
+                                            <button
                                                 onClick={() => router.push(`agenda?employee=${employee.id}`)}
-                                                className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase hover:text-primary transition-colors h-auto p-0"
+                                                className="flex items-center gap-1 text-[11px] font-semibold text-[#F97316] uppercase hover:underline transition-colors"
                                             >
                                                 Ver Agenda <ChevronRight className="w-3 h-3" />
-                                            </Button>
+                                            </button>
                                         </div>
                                     </div>
                                 </Card>
@@ -505,33 +513,36 @@ export default function FuncionariosPage() {
                     </AnimatePresence>
 
                     {filteredEmployees.length === 0 && (
-                        <div className="col-span-full py-16 text-center text-slate-400">
-                            <p className="text-lg font-bold">Nenhum profissional encontrado.</p>
-                            <p className="text-sm">Clique em &quot;Novo Profissional&quot; para cadastrar.</p>
+                        <div className="col-span-full py-16 text-center">
+                            <div className="w-16 h-16 rounded-xl bg-[#FFF7ED] flex items-center justify-center mx-auto mb-4">
+                                <Users className="w-8 h-8 text-[#F97316]" />
+                            </div>
+                            <p className="text-lg font-bold text-[#0F172A]">Nenhum profissional encontrado</p>
+                            <p className="text-sm text-[#64748b] mt-1">Clique em &quot;Novo Profissional&quot; para cadastrar.</p>
                         </div>
                     )}
                 </div>
             )}
 
             {!loading && !loadError && viewMode === 'list' && (
-                <div className="rounded-[2rem] overflow-hidden border-none shadow-sm bg-white dark:bg-zinc-900">
+                <div className="rounded-xl overflow-hidden border border-[#E2E8F0] shadow-sm bg-white">
                     <Table>
                         <TableHeader>
-                            <TableRow className="hover:bg-transparent border-slate-100 dark:border-zinc-800">
-                                <TableHead className="pl-8 py-6 font-bold text-xs uppercase tracking-widest">Profissional</TableHead>
-                                <TableHead className="font-bold text-xs uppercase tracking-widest">Contatos</TableHead>
-                                <TableHead className="font-bold text-xs uppercase tracking-widest">Especialidades</TableHead>
-                                <TableHead className="font-bold text-xs uppercase tracking-widest">Comissão</TableHead>
-                                <TableHead className="font-bold text-xs uppercase tracking-widest">Status</TableHead>
-                                <TableHead className="text-right pr-8 font-bold text-xs uppercase tracking-widest">Ações</TableHead>
+                            <TableRow className="hover:bg-transparent border-[#E2E8F0] bg-[#F8F9FF]">
+                                <TableHead className="pl-6 py-4 font-semibold text-[11px] uppercase tracking-wide text-[#64748b]">Profissional</TableHead>
+                                <TableHead className="font-semibold text-[11px] uppercase tracking-wide text-[#64748b]">Contatos</TableHead>
+                                <TableHead className="font-semibold text-[11px] uppercase tracking-wide text-[#64748b]">Especialidades</TableHead>
+                                <TableHead className="font-semibold text-[11px] uppercase tracking-wide text-[#64748b]">Comissão</TableHead>
+                                <TableHead className="font-semibold text-[11px] uppercase tracking-wide text-[#64748b]">Status</TableHead>
+                                <TableHead className="text-right pr-6 font-semibold text-[11px] uppercase tracking-wide text-[#64748b]">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredEmployees.map((employee) => (
-                                <TableRow key={employee.id} className="border-slate-50 dark:border-zinc-800/50 hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                    <TableCell className="pl-8 py-5">
+                                <TableRow key={employee.id} className="border-[#E2E8F0] hover:bg-[#F8F9FF] transition-colors">
+                                    <TableCell className="pl-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black overflow-hidden">
+                                            <div className="w-10 h-10 rounded-lg bg-[#FFF7ED] flex items-center justify-center text-[#F97316] font-bold overflow-hidden">
                                                 {employee.avatarUrl ? (
                                                     <img
                                                         src={employee.avatarUrl}
@@ -539,45 +550,50 @@ export default function FuncionariosPage() {
                                                         className="w-full h-full object-cover"
                                                     />
                                                 ) : (
-                                                    employee.fullName.charAt(0)
+                                                    employee.fullName.charAt(0).toUpperCase()
                                                 )}
                                             </div>
-                                            <div className="font-bold text-slate-900 dark:text-white uppercase tracking-tight">{employee.fullName}</div>
+                                            <div className="font-semibold text-[#0F172A]">{employee.fullName}</div>
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-tight">{employee.email}</div>
-                                        <div className="text-[9px] text-slate-400 font-medium">{employee.phone}</div>
+                                        <div className="text-sm text-[#0F172A]">{employee.email}</div>
+                                        <div className="text-xs text-[#64748b]">{employee.phone}</div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-wrap gap-1 max-w-[200px]">
-                                            {(employee.specialties ?? []).map(specId => {
+                                            {(employee.specialties ?? []).slice(0, 2).map(specId => {
                                                 const service = services.find(s => s.id === specId)
                                                 return (
-                                                    <Badge key={specId} variant="secondary" className="bg-slate-100 dark:bg-zinc-800 text-[10px] py-0 border-none">
+                                                    <Badge key={specId} variant="secondary" className="bg-[#F1F5F9] text-[#64748b] text-[10px] py-0.5 px-2 border-none font-medium">
                                                         {service?.name || specId}
                                                     </Badge>
                                                 )
                                             })}
+                                            {(employee.specialties ?? []).length > 2 && (
+                                                <Badge variant="secondary" className="bg-[#F1F5F9] text-[#64748b] text-[10px] py-0.5 px-2 border-none font-medium">
+                                                    +{(employee.specialties ?? []).length - 2}
+                                                </Badge>
+                                            )}
                                         </div>
                                     </TableCell>
-                                    <TableCell className="font-bold text-slate-900 dark:text-white">
+                                    <TableCell className="font-bold text-[#0F172A]">
                                         {employee.commissionRate ?? 0}%
                                     </TableCell>
                                     <TableCell>
                                         {employee.acceptsOnlineBooking ? (
-                                            <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-bold text-[9px] uppercase">Online</Badge>
+                                            <Badge className="bg-[#DCFCE7] text-[#22C55E] border-none font-semibold text-[10px] uppercase">Ativo</Badge>
                                         ) : (
-                                            <Badge className="bg-slate-100 dark:bg-zinc-800 text-slate-400 border-none font-bold text-[9px] uppercase">Offline</Badge>
+                                            <Badge className="bg-[#F1F5F9] text-[#94a3b8] border-none font-semibold text-[10px] uppercase">Inativo</Badge>
                                         )}
                                     </TableCell>
-                                    <TableCell className="text-right pr-8">
-                                        <div className="flex justify-end gap-2">
+                                    <TableCell className="text-right pr-6">
+                                        <div className="flex justify-end gap-1">
                                             <Button
                                                 onClick={() => openEditDialog(employee)}
                                                 variant="ghost"
                                                 size="icon"
-                                                className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary"
+                                                className="h-8 w-8 rounded-lg text-[#64748b] hover:bg-[#F8F9FF] hover:text-[#F97316]"
                                             >
                                                 <Settings2 className="w-4 h-4" />
                                             </Button>
@@ -588,7 +604,7 @@ export default function FuncionariosPage() {
                                                 }}
                                                 variant="ghost"
                                                 size="icon"
-                                                className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-500"
+                                                className="h-8 w-8 rounded-lg text-[#64748b] hover:bg-red-50 hover:text-red-500"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </Button>
