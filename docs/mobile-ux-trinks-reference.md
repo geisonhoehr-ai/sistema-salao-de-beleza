@@ -214,6 +214,112 @@ se a bottom nav entra apenas no app interno ou tambem no portal do cliente.
 - Manter sidebar desktop sem mudanca nesta primeira fase.
 - Mapear permissoes antes de exibir Financeiro/Comissoes.
 
+## Tela de Profissionais: referencia Trinks
+
+Referencia enviada por Oseias: tela mobile de profissionais no Trinks.
+
+Observacao principal: a lista de profissionais do Trinks usa uma tabela compacta
+com informacoes relevantes visiveis de uma vez. Oseias prefere esse padrao para
+o Tratto, porque a tela atual do Tratto esta com cara de card grande, pouco
+intuitiva e pesada no mobile.
+
+### O que o Trinks resolve melhor nessa tela
+
+- Estrutura em tabela/lista operacional, nao em cards grandes.
+- Abas claras no topo:
+  - Todos os profissionais
+  - Perfis de acesso
+- Acoes compactas acima da tabela:
+  - adicionar profissional;
+  - filtro "Apenas Ativos";
+  - exportar;
+  - recalcular/atualizar.
+- Colunas com informacoes uteis para decisao rapida:
+  - foto;
+  - nome;
+  - apelido;
+  - perfil de acesso;
+  - possui agenda;
+  - funcao.
+- Linhas densas, escaneaveis e com separadores leves.
+- Botoes menores para mobile, sem ocupar meia tela.
+
+### Estado atual no Tratto
+
+Arquivo principal: `src/app/[tenantSlug]/(admin)/funcionarios/page.tsx`.
+
+Pontos do codigo atual que merecem ajuste:
+
+- `viewMode` inicia como `grid`, entao o usuario cai primeiro nos cards.
+- A tela tem alternancia entre grid e lista, mas no mobile a tabela/lista deve
+  ser o padrao.
+- Os cards atuais usam muito espaco visual (`p-8`, radius grande, botoes 40px,
+  avatar grande e blocos altos).
+- Os botoes principais no topo ficam grandes para uso mobile.
+- A lista atual existe, mas ainda parece tabela desktop adaptada:
+  - colunas `Profissional`, `Contatos`, `Especialidades`, `Comissao`, `Status`,
+    `Acoes`;
+  - nao mostra claramente `Apelido`, `Perfil de acesso`, `Possui agenda` e
+    `Funcao` como a referencia.
+
+### Direcao recomendada para Profissionais
+
+No mobile, substituir a experiencia inicial de cards por uma tabela/lista
+compacta inspirada na referencia do Trinks.
+
+Requisitos:
+
+- Mobile deve abrir em modo lista/tabela por padrao.
+- Manter cards apenas como opcao secundaria ou remover do mobile.
+- Botoes no mobile devem ser menores e mais densos:
+  - altura entre 32px e 36px para acoes secundarias;
+  - icone + texto curto;
+  - evitar botao largo para tudo.
+- Adicionar tabs ou segmentacao clara:
+  - Todos os profissionais;
+  - Perfis de acesso.
+- Adicionar filtro `Apenas ativos` perto das acoes principais.
+- Priorizar colunas/campos:
+  - Foto;
+  - Nome;
+  - Apelido;
+  - Perfil de acesso;
+  - Possui agenda;
+  - Funcao;
+  - Acoes.
+- A tabela mobile pode ter rolagem horizontal controlada, desde que:
+  - a primeira coluna de identidade continue facil de ler;
+  - os botoes de acao nao quebrem layout;
+  - nao exista texto gigante empurrando as colunas.
+
+### Backlog especifico
+
+- Alterar `useState<'grid' | 'list'>('grid')` para iniciar como lista no mobile
+  ou persistir preferencia por viewport.
+- Criar uma versao mobile compacta da tabela de profissionais.
+- Rever se o termo da rota deve continuar `funcionarios` internamente, mas na UI
+  manter sempre "Profissionais".
+- Mapear campos faltantes:
+  - apelido;
+  - perfil de acesso;
+  - possui agenda;
+  - funcao/cargo.
+- Compactar botoes de topo:
+  - Novo;
+  - Exportar/importar;
+  - Atualizar;
+  - Apenas ativos.
+- Validar screenshot em 390px e 430px.
+
+### Criterio de aceite para Profissionais
+
+- Ao abrir no celular, a tela parece uma lista operacional, nao um grid de cards.
+- O usuario consegue comparar profissionais sem abrir cada cadastro.
+- Nome, apelido, perfil, agenda e funcao aparecem na visao principal.
+- Botoes nao dominam a tela.
+- Acoes continuam tocaveis, mas visualmente compactas.
+- A versao desktop nao perde a tabela nem a leitura atual.
+
 ## Criterio de aceite
 
 No celular, o Tratto deve parecer um app operacional:
