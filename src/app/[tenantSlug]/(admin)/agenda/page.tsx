@@ -7,6 +7,7 @@ import { useTenantAppointments, useTenantEmployees, useTenantServices, useTenant
 import type { AppointmentRecord, ServiceRecord, AppointmentStatus } from "@/types/catalog"
 import { NewAppointmentModal } from "@/components/agenda/new-appointment-modal"
 import { CompleteAppointmentModal } from "@/components/agenda/complete-appointment-modal"
+import { AppointmentActionsSheet } from "@/components/agenda/appointment-actions-sheet"
 import { AgendaSidebar } from "@/components/agenda/agenda-sidebar"
 import { AgendaHeader } from "@/components/agenda/agenda-header"
 import { AgendaStatusBar } from "@/components/agenda/agenda-status-bar"
@@ -38,6 +39,8 @@ export default function AgendaPage() {
     const [selectedAppointment, setSelectedAppointment] = useState<AppointmentRecord | null>(null)
     const [showCompleteModal, setShowCompleteModal] = useState(false)
     const [appointmentToComplete, setAppointmentToComplete] = useState<AppointmentRecord | null>(null)
+    const [showActionsSheet, setShowActionsSheet] = useState(false)
+    const [sheetAppointment, setSheetAppointment] = useState<AppointmentView | null>(null)
     const [isMounted, setIsMounted] = useState(false)
     const [selectedMobileEmployee, setSelectedMobileEmployee] = useState<string | null>(null)
     const [isMobileView, setIsMobileView] = useState(false)
@@ -283,6 +286,11 @@ export default function AgendaPage() {
     }
 
     const handleAppointmentClick = (appointment: AppointmentView) => {
+        setSheetAppointment(appointment)
+        setShowActionsSheet(true)
+    }
+
+    const handleEditFromSheet = (appointment: AppointmentView) => {
         setSelectedAppointment(appointment)
         setIsNewAppointmentModalOpen(true)
     }
@@ -332,6 +340,17 @@ export default function AgendaPage() {
                     setAppointmentToComplete(null)
                     refetchAppointments()
                 }}
+            />
+            <AppointmentActionsSheet
+                appointment={sheetAppointment}
+                isOpen={showActionsSheet}
+                onClose={() => {
+                    setShowActionsSheet(false)
+                    setSheetAppointment(null)
+                }}
+                onEdit={handleEditFromSheet}
+                onStatusChange={updateAppointmentStatus}
+                onComplete={handleCompleteAppointment}
             />
 
             {/* Layout Principal */}
