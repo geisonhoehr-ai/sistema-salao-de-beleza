@@ -19,6 +19,8 @@ import {
     AlertCircle,
     Users,
     RefreshCw,
+    CheckCircle2,
+    UserSearch,
 } from "lucide-react"
 import {
     Table,
@@ -112,6 +114,19 @@ export default function FuncionariosPage() {
     const [formData, setFormData] = useState<FormData>(defaultForm)
     const [avatarUrl, setAvatarUrl] = useState<string>("")
 
+    // Wizard states for new employee
+    const [wizardStep, setWizardStep] = useState<'cpf' | 'dados' | 'horarios' | 'servicos' | 'finalizar'>('cpf')
+    const [cpfSearch, setCpfSearch] = useState("")
+    const [searching, setSearching] = useState(false)
+    const [cpfSearched, setCpfSearched] = useState(false)
+    const [foundPerson, setFoundPerson] = useState<{
+        name: string
+        email: string
+        phone: string
+        birthdate?: string
+        source: 'cliente' | 'profissional'
+    } | null>(null)
+
     const filteredEmployees = employees.filter(emp =>
         emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (emp.specialties ?? []).some(specId => {
@@ -119,6 +134,100 @@ export default function FuncionariosPage() {
             return service?.name.toLowerCase().includes(searchTerm.toLowerCase())
         })
     )
+
+    // Format CPF for display/search
+    const formatCPF = (value: string) => {
+        const numbers = value.replace(/\D/g, '').slice(0, 11)
+        if (numbers.length <= 3) return numbers
+        if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`
+        if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`
+        return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9)}`
+    }
+
+    // Search for person by CPF
+    const handleSearchCPF = async () => {
+        if (!isSupabaseConfigured || !tenantId) {
+            setCpfSearched(true)
+            setFoundPerson(null)
+            return
+        }
+
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return
+
+        setSearching(true)
+        setCpfSearched(false)
+        setFoundPerson(null)
+
+        const cleanCPF = cpfSearch.replace(/\D/g, '')
+
+        // First check if already exists as employee
+        const { data: existingEmployee } = await supabase
+            .from("employees")
+            .select("full_name, document")
+            .eq("tenant_id", tenantId)
+            .eq("document", cleanCPF)
+            .eq("status", "active")
+            .single()
+
+        if (existingEmployee) {
+            setSearching(false)
+            setCpfSearched(true)
+            setFoundPerson({
+                name: existingEmployee.full_name,
+                email: '',
+                phone: '',
+                source: 'profissional'
+            })
+            return
+        }
+
+        // Search in customers table
+        const { data: customer } = await supabase
+            .from("customers")
+            .select("full_name, email, phone, birthdate, document")
+            .eq("tenant_id", tenantId)
+            .eq("document", cleanCPF)
+            .single()
+
+        setSearching(false)
+        setCpfSearched(true)
+
+        if (customer) {
+            setFoundPerson({
+                name: customer.full_name,
+                email: customer.email || '',
+                phone: customer.phone || '',
+                birthdate: customer.birthdate || '',
+                source: 'cliente'
+            })
+            // Pre-fill the form
+            setFormData(prev => ({
+                ...prev,
+                name: customer.full_name,
+                email: customer.email || '',
+                phone: customer.phone || '',
+                document: cleanCPF,
+                birthdate: customer.birthdate || '',
+            }))
+        } else {
+            // Set just the CPF
+            setFormData(prev => ({
+                ...prev,
+                document: cleanCPF,
+            }))
+        }
+    }
+
+    // Reset wizard when opening
+    const openNewEmployeeWizard = () => {
+        setWizardStep('cpf')
+        setCpfSearch('')
+        setCpfSearched(false)
+        setFoundPerson(null)
+        resetForm()
+        setShowNewEmployee(true)
+    }
 
     // ---- Supabase mutations ----
 
@@ -328,7 +437,7 @@ export default function FuncionariosPage() {
                         onImportComplete={refetch}
                     />
                     <Button
-                        onClick={() => setShowNewEmployee(true)}
+                        onClick={openNewEmployeeWizard}
                         className="rounded-lg h-11 px-5 bg-[#F97316] hover:bg-[#EA580C] text-white font-medium transition-all shadow-sm"
                     >
                         <Plus className="w-4 h-4 mr-2" />
@@ -621,10 +730,11 @@ export default function FuncionariosPage() {
             <FormDialog
                 open={showNewEmployee || showEditEmployee}
                 onOpenChange={showNewEmployee ? setShowNewEmployee : setShowEditEmployee}
-                title={showNewEmployee ? "Novo Profissional" : "Editar Profissional"}
-                description="Cadastre as informações e preferências do profissional."
+                title={showNewEmployee ? "Cadastrar Profissional" : "Editar Profissional"}
+                description={showNewEmployee ? "Preencha os dados para cadastrar um novo profissional." : "Cadastre as informações e preferências do profissional."}
                 onSubmit={showNewEmployee ? handleCreateEmployee : handleEditEmployee}
                 submitLabel={saving ? "Salvando..." : showNewEmployee ? "Concluir Cadastro" : "Salvar Alterações"}
+                hideSubmit={showNewEmployee && wizardStep !== 'finalizar'}
             >
                 {showEditEmployee && selectedEmployee ? (
                     <Tabs defaultValue="basico" className="w-full">
@@ -834,134 +944,362 @@ export default function FuncionariosPage() {
                         </TabsContent>
                     </Tabs>
                 ) : (
-                    <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-4 scrollbar-thin">
-                        {/* Informações Básicas */}
-                        <div className="space-y-4">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Informações Básicas</h4>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="col-span-2 space-y-2">
-                                    <Label className="text-xs font-bold uppercase">Nome Completo</Label>
-                                    <Input
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="rounded-xl h-12 bg-slate-50 dark:bg-zinc-800 border-none"
-                                    />
+                    <div className="space-y-6">
+                        {/* Wizard Steps Indicator */}
+                        <div className="flex items-center gap-1 mb-6">
+                            {[
+                                { id: 'cpf', label: 'Dados Gerais' },
+                                { id: 'horarios', label: 'Horários' },
+                                { id: 'servicos', label: 'Serviços' },
+                                { id: 'finalizar', label: 'Finalizar' },
+                            ].map((step, idx, arr) => (
+                                <div key={step.id} className="flex items-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (step.id === 'cpf' || (cpfSearched && wizardStep !== 'cpf')) {
+                                                setWizardStep(step.id as typeof wizardStep)
+                                            }
+                                        }}
+                                        disabled={!cpfSearched && step.id !== 'cpf'}
+                                        className={cn(
+                                            "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all",
+                                            wizardStep === step.id || (step.id === 'cpf' && (wizardStep === 'cpf' || wizardStep === 'dados'))
+                                                ? "bg-[#F97316] text-white"
+                                                : cpfSearched
+                                                    ? "bg-[#F1F5F9] text-[#64748b] hover:bg-[#E2E8F0]"
+                                                    : "bg-[#F1F5F9] text-[#94a3b8] cursor-not-allowed"
+                                        )}
+                                    >
+                                        {step.label}
+                                    </button>
+                                    {idx < arr.length - 1 && (
+                                        <ChevronRight className="w-4 h-4 text-[#E2E8F0] mx-1" />
+                                    )}
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase">Email</Label>
-                                    <Input
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="rounded-xl h-12 bg-slate-50 dark:bg-zinc-800 border-none"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase">Telefone</Label>
-                                    <Input
-                                        value={formData.phone}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        className="rounded-xl h-12 bg-slate-50 dark:bg-zinc-800 border-none"
-                                    />
-                                </div>
-                            </div>
+                            ))}
                         </div>
 
-                        {/* Especialidades */}
-                        <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-zinc-800">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Especialidades</h4>
-                            <div className="grid grid-cols-2 gap-3">
-                                {services.map(service => (
-                                    <div key={service.id} className="flex items-center space-x-2 p-3 bg-slate-50 dark:bg-zinc-800 rounded-xl">
-                                        <Checkbox
-                                            id={service.id}
-                                            checked={formData.specialties.includes(service.id)}
-                                            onCheckedChange={() => toggleSpecialty(service.id)}
-                                        />
-                                        <label htmlFor={service.id} className="text-sm font-medium leading-none">
-                                            {service.name}
-                                        </label>
+                        {/* Step: CPF Search / Dados Gerais */}
+                        {(wizardStep === 'cpf' || wizardStep === 'dados') && (
+                            <div className="space-y-6 max-h-[55vh] overflow-y-auto pr-2">
+                                {/* CPF Search */}
+                                <div className="space-y-4">
+                                    <h4 className="text-[11px] font-bold text-[#F97316] uppercase tracking-wide">Dados Gerais</h4>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold text-[#64748b]">CPF</Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={cpfSearch}
+                                                onChange={(e) => setCpfSearch(formatCPF(e.target.value))}
+                                                placeholder="000.000.000-00"
+                                                className="rounded-lg h-11 bg-[#F8F9FF] border-[#E2E8F0] font-medium"
+                                                maxLength={14}
+                                            />
+                                            <Button
+                                                type="button"
+                                                onClick={handleSearchCPF}
+                                                disabled={cpfSearch.replace(/\D/g, '').length < 11 || searching}
+                                                className="rounded-lg h-11 px-4 bg-[#64748b] hover:bg-[#475569] text-white font-medium"
+                                            >
+                                                {searching ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <UserSearch className="w-4 h-4 mr-2" />
+                                                        Pesquisar
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
 
-                        {/* Horários de Atendimento */}
-                        <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-zinc-800">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Horários de Atendimento</h4>
-                            <div className="space-y-3">
-                                {weekDays.map(day => {
-                                    const hours = formData.workingHours[day.id]?.[0]
-                                    return (
-                                        <div key={day.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-zinc-800 rounded-2xl">
-                                            <div className="flex items-center gap-3">
-                                                <Switch
-                                                    checked={!!hours}
-                                                    onCheckedChange={(checked) => {
-                                                        if (checked) setWorkingHours(day.id, "09:00", "18:00")
-                                                        else removeWorkingDay(day.id)
-                                                    }}
-                                                />
-                                                <span className="text-sm font-bold uppercase tracking-tight w-20">{day.label}</span>
-                                            </div>
-                                            {hours && (
-                                                <div className="flex items-center gap-2">
-                                                    <Input
-                                                        type="time"
-                                                        value={hours.start}
-                                                        onChange={(e) => setWorkingHours(day.id, e.target.value, hours.end)}
-                                                        className="w-24 h-9 rounded-lg bg-white dark:bg-zinc-900 border-none text-xs font-bold"
-                                                    />
-                                                    <span className="text-slate-400 font-bold">às</span>
-                                                    <Input
-                                                        type="time"
-                                                        value={hours.end}
-                                                        onChange={(e) => setWorkingHours(day.id, hours.start, e.target.value)}
-                                                        className="w-24 h-9 rounded-lg bg-white dark:bg-zinc-900 border-none text-xs font-bold"
-                                                    />
+                                    {/* Search Result */}
+                                    {cpfSearched && (
+                                        <div className={cn(
+                                            "p-4 rounded-xl border",
+                                            foundPerson?.source === 'profissional'
+                                                ? "bg-red-50 border-red-200"
+                                                : foundPerson
+                                                    ? "bg-green-50 border-green-200"
+                                                    : "bg-[#F8F9FF] border-[#E2E8F0]"
+                                        )}>
+                                            {foundPerson?.source === 'profissional' ? (
+                                                <div className="flex items-center gap-3">
+                                                    <AlertCircle className="w-5 h-5 text-red-500" />
+                                                    <div>
+                                                        <p className="font-semibold text-red-700">Profissional já cadastrado</p>
+                                                        <p className="text-sm text-red-600">{foundPerson.name} já está cadastrado como profissional.</p>
+                                                    </div>
+                                                </div>
+                                            ) : foundPerson ? (
+                                                <div className="flex items-center gap-3">
+                                                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                                    <div>
+                                                        <p className="font-semibold text-green-700">Cliente encontrado!</p>
+                                                        <p className="text-sm text-green-600">
+                                                            {foundPerson.name} - Dados preenchidos automaticamente.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-3">
+                                                    <UserSearch className="w-5 h-5 text-[#64748b]" />
+                                                    <div>
+                                                        <p className="font-semibold text-[#0F172A]">CPF não encontrado</p>
+                                                        <p className="text-sm text-[#64748b]">
+                                                            Preencha os dados do novo profissional abaixo.
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             )}
-                                            {!hours && <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pr-4">Folga</span>}
                                         </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Preferências & Financeiro */}
-                        <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-zinc-800">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Preferências & Financeiro</h4>
-                            <div className="grid grid-cols-1 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase">Comissão (%)</Label>
-                                    <Input
-                                        type="number"
-                                        min={0}
-                                        max={100}
-                                        value={formData.commission}
-                                        onChange={(e) => setFormData({ ...formData, commission: Number(e.target.value) })}
-                                        className="rounded-xl h-12 bg-slate-50 dark:bg-zinc-800 border-none"
-                                    />
+                                    )}
                                 </div>
-                                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-zinc-800 rounded-2xl">
-                                    <div>
-                                        <p className="text-sm font-bold">Reserva Online</p>
-                                        <p className="text-[10px] text-slate-400">Permitir que clientes agendem com este profissional</p>
+
+                                {/* Form Fields - Show after CPF search */}
+                                {cpfSearched && foundPerson?.source !== 'profissional' && (
+                                    <div className="space-y-4 pt-4 border-t border-[#E2E8F0]">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="col-span-2 space-y-2">
+                                                <Label className="text-xs font-semibold text-[#64748b]">Nome Completo</Label>
+                                                <Input
+                                                    value={formData.name}
+                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                    className="rounded-lg h-11 bg-[#F8F9FF] border-[#E2E8F0]"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold text-[#64748b]">Email</Label>
+                                                <Input
+                                                    value={formData.email}
+                                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                    className="rounded-lg h-11 bg-[#F8F9FF] border-[#E2E8F0]"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold text-[#64748b]">Telefone</Label>
+                                                <Input
+                                                    value={formData.phone}
+                                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                                    className="rounded-lg h-11 bg-[#F8F9FF] border-[#E2E8F0]"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold text-[#64748b]">Data de Nascimento</Label>
+                                                <Input
+                                                    type="date"
+                                                    value={formData.birthdate}
+                                                    onChange={(e) => setFormData({ ...formData, birthdate: e.target.value })}
+                                                    className="rounded-lg h-11 bg-[#F8F9FF] border-[#E2E8F0]"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold text-[#64748b]">Cargo/Função</Label>
+                                                <Select
+                                                    value={formData.role}
+                                                    onValueChange={(value) => setFormData({ ...formData, role: value })}
+                                                >
+                                                    <SelectTrigger className="rounded-lg h-11 bg-[#F8F9FF] border-[#E2E8F0]">
+                                                        <SelectValue placeholder="Selecione" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="gerente">Gerente</SelectItem>
+                                                        <SelectItem value="cabeleireira">Cabeleireira</SelectItem>
+                                                        <SelectItem value="manicure">Manicure</SelectItem>
+                                                        <SelectItem value="esteticista">Esteticista</SelectItem>
+                                                        <SelectItem value="recepcionista">Recepcionista</SelectItem>
+                                                        <SelectItem value="assistente">Assistente</SelectItem>
+                                                        <SelectItem value="outro">Outro</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <Switch
-                                        checked={formData.acceptsOnlineBooking}
-                                        onCheckedChange={(checked) => setFormData({ ...formData, acceptsOnlineBooking: checked })}
-                                    />
+                                )}
+
+                                {/* Next Button */}
+                                {cpfSearched && foundPerson?.source !== 'profissional' && (
+                                    <div className="flex justify-end pt-4">
+                                        <Button
+                                            type="button"
+                                            onClick={() => setWizardStep('horarios')}
+                                            disabled={!formData.name}
+                                            className="rounded-lg h-11 px-6 bg-[#F97316] hover:bg-[#EA580C] text-white font-medium"
+                                        >
+                                            Seguir
+                                            <ChevronRight className="w-4 h-4 ml-2" />
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Step: Horários */}
+                        {wizardStep === 'horarios' && (
+                            <div className="space-y-6 max-h-[55vh] overflow-y-auto pr-2">
+                                <h4 className="text-[11px] font-bold text-[#F97316] uppercase tracking-wide">Horários de Atendimento</h4>
+                                <div className="space-y-3">
+                                    {weekDays.map(day => {
+                                        const hours = formData.workingHours[day.id]?.[0]
+                                        return (
+                                            <div key={day.id} className="flex items-center justify-between p-3 bg-[#F8F9FF] rounded-xl border border-[#E2E8F0]">
+                                                <div className="flex items-center gap-3">
+                                                    <Switch
+                                                        checked={!!hours}
+                                                        onCheckedChange={(checked) => {
+                                                            if (checked) setWorkingHours(day.id, "09:00", "18:00")
+                                                            else removeWorkingDay(day.id)
+                                                        }}
+                                                    />
+                                                    <span className="text-sm font-semibold text-[#0F172A] w-20">{day.label}</span>
+                                                </div>
+                                                {hours && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Input
+                                                            type="time"
+                                                            value={hours.start}
+                                                            onChange={(e) => setWorkingHours(day.id, e.target.value, hours.end)}
+                                                            className="w-24 h-9 rounded-lg bg-white border-[#E2E8F0] text-xs font-semibold"
+                                                        />
+                                                        <span className="text-[#64748b] font-medium">às</span>
+                                                        <Input
+                                                            type="time"
+                                                            value={hours.end}
+                                                            onChange={(e) => setWorkingHours(day.id, hours.start, e.target.value)}
+                                                            className="w-24 h-9 rounded-lg bg-white border-[#E2E8F0] text-xs font-semibold"
+                                                        />
+                                                    </div>
+                                                )}
+                                                {!hours && <span className="text-[11px] font-semibold text-[#94a3b8] uppercase pr-4">Folga</span>}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+
+                                <div className="flex justify-between pt-4">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setWizardStep('cpf')}
+                                        className="rounded-lg h-11 px-6"
+                                    >
+                                        Voltar
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        onClick={() => setWizardStep('servicos')}
+                                        className="rounded-lg h-11 px-6 bg-[#F97316] hover:bg-[#EA580C] text-white font-medium"
+                                    >
+                                        Seguir
+                                        <ChevronRight className="w-4 h-4 ml-2" />
+                                    </Button>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
-                        {/* Permissões de Acesso */}
-                        <div className="pt-6 border-t border-slate-100 dark:border-zinc-800">
-                            <PermissionsManager
-                                permissions={formData.permissions}
-                                onChange={(permissions) => setFormData({ ...formData, permissions })}
-                            />
-                        </div>
+                        {/* Step: Serviços/Especialidades */}
+                        {wizardStep === 'servicos' && (
+                            <div className="space-y-6 max-h-[55vh] overflow-y-auto pr-2">
+                                <h4 className="text-[11px] font-bold text-[#F97316] uppercase tracking-wide">Serviços que realiza</h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {services.map(service => (
+                                        <div
+                                            key={service.id}
+                                            className={cn(
+                                                "flex items-center space-x-3 p-3 rounded-xl border cursor-pointer transition-all",
+                                                formData.specialties.includes(service.id)
+                                                    ? "bg-[#FFF7ED] border-[#F97316]"
+                                                    : "bg-[#F8F9FF] border-[#E2E8F0] hover:border-[#F97316]/50"
+                                            )}
+                                            onClick={() => toggleSpecialty(service.id)}
+                                        >
+                                            <Checkbox
+                                                id={`new-${service.id}`}
+                                                checked={formData.specialties.includes(service.id)}
+                                                onCheckedChange={() => toggleSpecialty(service.id)}
+                                                className="data-[state=checked]:bg-[#F97316] data-[state=checked]:border-[#F97316]"
+                                            />
+                                            <label htmlFor={`new-${service.id}`} className="text-sm font-medium leading-none cursor-pointer">
+                                                {service.name}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="flex justify-between pt-4">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setWizardStep('horarios')}
+                                        className="rounded-lg h-11 px-6"
+                                    >
+                                        Voltar
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        onClick={() => setWizardStep('finalizar')}
+                                        className="rounded-lg h-11 px-6 bg-[#F97316] hover:bg-[#EA580C] text-white font-medium"
+                                    >
+                                        Seguir
+                                        <ChevronRight className="w-4 h-4 ml-2" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step: Finalizar (Comissão, Booking, Permissões) */}
+                        {wizardStep === 'finalizar' && (
+                            <div className="space-y-6 max-h-[55vh] overflow-y-auto pr-2">
+                                <h4 className="text-[11px] font-bold text-[#F97316] uppercase tracking-wide">Informações Adicionais</h4>
+
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold text-[#64748b]">Comissão (%)</Label>
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            value={formData.commission}
+                                            onChange={(e) => setFormData({ ...formData, commission: Number(e.target.value) })}
+                                            className="rounded-lg h-11 bg-[#F8F9FF] border-[#E2E8F0] max-w-[120px]"
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-4 bg-[#F8F9FF] rounded-xl border border-[#E2E8F0]">
+                                        <div>
+                                            <p className="text-sm font-semibold text-[#0F172A]">Reserva Online</p>
+                                            <p className="text-xs text-[#64748b]">Clientes podem agendar com este profissional</p>
+                                        </div>
+                                        <Switch
+                                            checked={formData.acceptsOnlineBooking}
+                                            onCheckedChange={(checked) => setFormData({ ...formData, acceptsOnlineBooking: checked })}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Permissões */}
+                                <div className="pt-4 border-t border-[#E2E8F0]">
+                                    <PermissionsManager
+                                        permissions={formData.permissions}
+                                        onChange={(permissions) => setFormData({ ...formData, permissions })}
+                                    />
+                                </div>
+
+                                <div className="flex justify-between pt-4">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setWizardStep('servicos')}
+                                        className="rounded-lg h-11 px-6"
+                                    >
+                                        Voltar
+                                    </Button>
+                                    {/* The submit button from FormDialog will appear here */}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </FormDialog>

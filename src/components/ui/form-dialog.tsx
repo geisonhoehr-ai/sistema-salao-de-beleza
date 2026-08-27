@@ -22,6 +22,7 @@ interface FormDialogProps {
     submitLabel?: string
     cancelLabel?: string
     isLoading?: boolean
+    hideSubmit?: boolean
 }
 
 export function FormDialog({
@@ -34,7 +35,8 @@ export function FormDialog({
     onCancel,
     submitLabel = "Salvar",
     cancelLabel = "Cancelar",
-    isLoading = false
+    isLoading = false,
+    hideSubmit = false,
 }: FormDialogProps) {
     return (
         <Dialog
@@ -75,17 +77,20 @@ export function FormDialog({
                     >
                         {cancelLabel}
                     </Button>
-                    <Button
-                        type="button"
-                        onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            onSubmit()
-                        }}
-                        disabled={isLoading}
-                    >
-                        {isLoading ? "Salvando..." : submitLabel}
-                    </Button>
+                    {!hideSubmit && (
+                        <Button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                onSubmit()
+                            }}
+                            disabled={isLoading}
+                            className="bg-[#F97316] hover:bg-[#EA580C]"
+                        >
+                            {isLoading ? "Salvando..." : submitLabel}
+                        </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>
