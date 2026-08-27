@@ -57,7 +57,7 @@ export default function TenantDashboardPage() {
     }, [])
 
     // Get user's first name
-    const userName = user?.user_metadata?.name?.split(' ')[0] ||
+    const userName = user?.name?.split(' ')[0] ||
         user?.email?.split('@')[0] ||
         'Gestor'
 

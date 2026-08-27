@@ -1,252 +1,187 @@
 "use client"
 
 import { useState } from "react"
-import { Save, Upload, Palette, Clock, Calendar, ShieldCheck, Sparkles } from "lucide-react"
+import Link from "next/link"
+import { useParams } from "next/navigation"
+import {
+    Store,
+    Shield,
+    Globe,
+    CreditCard,
+    Settings,
+    Calendar,
+    MessageSquare,
+    Heart,
+    Receipt,
+    FileText,
+    ChevronRight,
+    Bell,
+    Users,
+    Palette,
+} from "lucide-react"
 import { useTenant } from "@/contexts/tenant-context"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ColorPicker } from "@/components/ui/color-picker"
-import { Switch } from "@/components/ui/switch"
+import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
+
+interface SettingItem {
+    icon: React.ElementType
+    label: string
+    href: string
+    description?: string
+}
 
 export default function ConfiguracoesPage() {
-    const { currentTenant, setCurrentTenant } = useTenant()
+    const { currentTenant } = useTenant()
+    const params = useParams()
+    const slug = params.tenantSlug as string
 
-    const [primaryColor, setPrimaryColor] = useState(currentTenant.customPrimaryColor || currentTenant.primaryColor)
-    const [secondaryColor, setSecondaryColor] = useState(currentTenant.customSecondaryColor || currentTenant.secondaryColor)
-    const [customDomain, setCustomDomain] = useState(currentTenant.customDomain || '')
-    const [logoPreview, setLogoPreview] = useState(currentTenant.customLogo || '')
-    const [bufferTime, setBufferTime] = useState("15")
-
-    const weekDays = [
-        { id: 'seg', label: 'Segunda-feira', open: '09:00', close: '18:00', active: true },
-        { id: 'ter', label: 'Terça-feira', open: '09:00', close: '18:00', active: true },
-        { id: 'qua', label: 'Quarta-feira', open: '09:00', close: '18:00', active: true },
-        { id: 'qui', label: 'Quinta-feira', open: '09:00', close: '20:00', active: true },
-        { id: 'sex', label: 'Sexta-feira', open: '09:00', close: '20:00', active: true },
-        { id: 'sab', label: 'Sábado', open: '08:00', close: '16:00', active: true },
-        { id: 'dom', label: 'Domingo', open: '00:00', close: '00:00', active: false },
+    const systemSettings: SettingItem[] = [
+        {
+            icon: Store,
+            label: "Dados do estabelecimento",
+            href: `/${slug}/configuracoes/estabelecimento`,
+            description: "Nome, endereço, contato"
+        },
+        {
+            icon: Shield,
+            label: "Perfis de acesso",
+            href: `/${slug}/configuracoes/perfis`,
+            description: "Permissões de usuários"
+        },
+        {
+            icon: Globe,
+            label: "Site e Agendamento Online",
+            href: `/${slug}/configuracoes/agendamento-online`,
+            description: "Configurar página de booking"
+        },
+        {
+            icon: CreditCard,
+            label: "Formas de pagamento",
+            href: `/${slug}/configuracoes/pagamentos`,
+            description: "Métodos aceitos"
+        },
+        {
+            icon: Settings,
+            label: "Configurações gerais",
+            href: `/${slug}/configuracoes/gerais`,
+            description: "Horários, intervalos, regras"
+        },
+        {
+            icon: Calendar,
+            label: "Feriados e horários especiais",
+            href: `/${slug}/configuracoes/feriados`,
+            description: "Dias fechados, exceções"
+        },
+        {
+            icon: Palette,
+            label: "Identidade Visual",
+            href: `/${slug}/configuracoes/visual`,
+            description: "Logo, cores, tema"
+        },
     ]
 
-    const handleSave = async () => {
-        const supabase = getSupabaseBrowserClient()
+    const additionalSettings: SettingItem[] = [
+        {
+            icon: Bell,
+            label: "Notificações",
+            href: `/${slug}/configuracoes/notificacoes`,
+            description: "Email, SMS, WhatsApp"
+        },
+        {
+            icon: MessageSquare,
+            label: "Rotina de mensagens",
+            href: `/${slug}/configuracoes/mensagens`,
+            description: "Lembretes automáticos"
+        },
+        {
+            icon: Users,
+            label: "Convite de retorno",
+            href: `/${slug}/configuracoes/retorno`,
+            description: "Reengajamento de clientes"
+        },
+        {
+            icon: Heart,
+            label: "Programa de Fidelidade",
+            href: `/${slug}/configuracoes/fidelidade`,
+            description: "Pontos e recompensas"
+        },
+        {
+            icon: Receipt,
+            label: "Nota Fiscal de Serviços (NFS-e)",
+            href: `/${slug}/configuracoes/nfse`,
+            description: "Emissão automática"
+        },
+        {
+            icon: FileText,
+            label: "Nota Fiscal do Consumidor (NFC-e)",
+            href: `/${slug}/configuracoes/nfce`,
+            description: "Emissão de cupom fiscal"
+        },
+    ]
 
-        if (supabase && isSupabaseConfigured) {
-            try {
-                // Atualiza as cores no Supabase
-                const { error } = await supabase
-                    .from('tenants')
-                    .update({
-                        theme: {
-                            primary: primaryColor,
-                            secondary: secondaryColor
-                        },
-                        logo_url: logoPreview || null,
-                        settings: {
-                            custom_domain: customDomain
-                        }
-                    })
-                    .eq('id', currentTenant.id)
-
-                if (error) {
-                    console.error('Erro ao salvar configurações:', error)
-                    alert('Erro ao salvar configurações. Por favor, tente novamente.')
-                    return
-                }
-            } catch (error) {
-                console.error('Erro ao salvar configurações:', error)
-                alert('Erro ao salvar configurações. Por favor, tente novamente.')
-                return
-            }
-        }
-
-        // Atualiza o contexto local
-        const updatedTenant = {
-            ...currentTenant,
-            customPrimaryColor: primaryColor,
-            customSecondaryColor: secondaryColor,
-            customDomain: customDomain,
-            customLogo: logoPreview
-        }
-        setCurrentTenant(updatedTenant)
-
-        // Aplica as cores localmente
-        document.documentElement.style.setProperty('--primary', primaryColor)
-        document.documentElement.style.setProperty('--secondary', secondaryColor)
-
-        alert('Configurações salvas com sucesso!')
-    }
-
-    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (file) {
-            const reader = new FileReader()
-            reader.onloadend = () => setLogoPreview(reader.result as string)
-            reader.readAsDataURL(file)
-        }
-    }
+    const SettingsList = ({ items, title }: { items: SettingItem[], title: string }) => (
+        <Card className="rounded-xl border border-[#E2E8F0] shadow-sm bg-white overflow-hidden">
+            <div className="px-6 py-4 bg-[#F8F9FF] border-b border-[#E2E8F0]">
+                <h3 className="text-lg font-bold text-[#0F172A]">{title}</h3>
+            </div>
+            <div className="divide-y divide-[#E2E8F0]">
+                {items.map((item) => {
+                    const Icon = item.icon
+                    return (
+                        <Link
+                            key={item.label}
+                            href={item.href}
+                            className="flex items-center gap-4 px-6 py-4 hover:bg-[#F8F9FF] transition-colors group"
+                        >
+                            <div className="w-10 h-10 rounded-lg bg-[#F97316]/10 flex items-center justify-center flex-shrink-0">
+                                <Icon className="w-5 h-5 text-[#F97316]" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-[#0F172A] group-hover:text-[#F97316] transition-colors">
+                                    {item.label}
+                                </p>
+                                {item.description && (
+                                    <p className="text-xs text-[#64748b] mt-0.5">{item.description}</p>
+                                )}
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-[#94a3b8] group-hover:text-[#F97316] transition-colors" />
+                        </Link>
+                    )
+                })}
+            </div>
+        </Card>
+    )
 
     return (
-        <div className="max-w-5xl mx-auto space-y-8 pb-20">
+        <div className="max-w-6xl mx-auto space-y-8 pb-20">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-[#0F172A]">Configurações</h2>
-                    <p className="text-[#64748b] font-medium mt-1">
-                        Gerencie as regras operacionais e identidade da sua empresa.
-                    </p>
-                </div>
-                <Button onClick={handleSave} size="lg" className="rounded-lg bg-[#0D9488] hover:bg-[#0F766E] text-white font-medium shadow-sm h-11 px-6">
-                    <Save className="w-5 h-5 mr-2" /> Salvar Alterações
-                </Button>
+            <div>
+                <h2 className="text-3xl font-bold tracking-tight text-[#0F172A]">Configurações</h2>
+                <p className="text-[#64748b] font-medium mt-1">
+                    Gerencie todas as configurações do seu estabelecimento.
+                </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Operational Hours */}
-                    <Card className="rounded-xl border border-[#E2E8F0] shadow-sm bg-white p-6">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-11 h-11 rounded-lg bg-[#0D9488]/10 flex items-center justify-center text-[#0D9488]">
-                                <Clock className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-[#0F172A]">Horários de Funcionamento</h3>
-                                <p className="text-sm text-[#64748b]">Defina quando sua empresa está aberta para agendamentos.</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            {weekDays.map((day) => (
-                                <div key={day.id} className="flex items-center justify-between p-3 rounded-lg border border-[#E2E8F0] hover:bg-[#F8F9FF] transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <Switch checked={day.active} className="data-[state=checked]:bg-[#0D9488]" />
-                                        <span className={cn("font-medium text-sm", day.active ? "text-[#0F172A]" : "text-[#94a3b8]")}>
-                                            {day.label}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            disabled={!day.active}
-                                            defaultValue={day.open}
-                                            className="w-20 h-9 rounded-md text-center font-medium border-[#E2E8F0] bg-[#F8F9FF] focus:ring-[#0D9488] focus:border-[#0D9488]"
-                                        />
-                                        <span className="text-[#94a3b8]">até</span>
-                                        <Input
-                                            disabled={!day.active}
-                                            defaultValue={day.close}
-                                            className="w-20 h-9 rounded-md text-center font-medium border-[#E2E8F0] bg-[#F8F9FF] focus:ring-[#0D9488] focus:border-[#0D9488]"
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
-
-                    {/* Operational Rules */}
-                    <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-8">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-primary">
-                                <Calendar className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Regras de Agendamento</h3>
-                                <p className="text-sm text-slate-500">Intervalos e políticas de cancelamento.</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label className="text-base font-bold">Tempo de Respiro (Cleaning Buffer)</Label>
-                                    <p className="text-xs text-slate-500">Intervalo automático adicionado entre cada serviço.</p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <Input
-                                        type="number"
-                                        value={bufferTime}
-                                        onChange={(e) => setBufferTime(e.target.value)}
-                                        className="w-20 h-12 rounded-xl text-center font-bold border-none bg-slate-100 dark:bg-zinc-800"
-                                    />
-                                    <span className="text-sm font-bold text-slate-400">min</span>
-                                </div>
-                            </div>
-
-                            <Card className="p-4 rounded-3xl bg-primary/5 border-primary/10 flex gap-3 items-center">
-                                <ShieldCheck className="w-5 h-5 text-primary shrink-0" />
-                                <p className="text-[10px] font-bold text-primary uppercase tracking-widest leading-normal">
-                                    Esta regra será aplicada globalmente a todos os serviços da {currentTenant.name}.
-                                </p>
-                            </Card>
-                        </div>
-                    </Card>
-                </div>
-
-                <div className="space-y-8">
-                    {/* Visual Identity */}
-                    <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-zinc-900 p-8">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-primary">
-                                <Palette className="w-6 h-6" />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Identidade Visual</h3>
-                        </div>
-
-                        <div className="space-y-8">
-                            <div className="space-y-4">
-                                <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Logo da Empresa</Label>
-                                <div className="relative group w-32 h-32 mx-auto">
-                                    <div className="w-32 h-32 rounded-3xl border-2 border-dashed border-slate-200 dark:border-zinc-800 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-zinc-800">
-                                        {logoPreview ? (
-                                            <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <span className="text-5xl">{currentTenant.logo}</span>
-                                        )}
-                                    </div>
-                                    <button
-                                        onClick={() => document.getElementById('logo-upload')?.click()}
-                                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl flex items-center justify-center text-white"
-                                    >
-                                        <Upload className="w-6 h-6" />
-                                    </button>
-                                    <input type="file" id="logo-upload" className="hidden" onChange={handleLogoUpload} />
-                                </div>
-                            </div>
-
-                            <div className="grid gap-6">
-                                <ColorPicker label="Cor Primária" color={primaryColor} onChange={setPrimaryColor} />
-                                <ColorPicker label="Cor Secundária" color={secondaryColor} onChange={setSecondaryColor} />
-                            </div>
-
-                            <div className="pt-4">
-                                <div className="p-4 rounded-3xl bg-slate-900 text-white space-y-4 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-20 h-20 bg-primary/20 blur-2xl rounded-full translate-x-10 -translate-y-10" />
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Preview do Botão</p>
-                                    <Button className="w-full h-12 rounded-xl bg-primary text-white font-bold pointer-events-none">
-                                        Agendar Agora
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
-
-                    {/* Premium Upgrade Card */}
-                    <Card className="p-8 rounded-[2.5rem] bg-gradient-to-br from-indigo-600 to-violet-700 text-white relative overflow-hidden">
-                        <Sparkles className="absolute top-4 right-4 w-6 h-6 text-yellow-400" />
-                        <div className="relative z-10 space-y-4">
-                            <h3 className="font-black text-xl leading-tight">Domínio Próprio?</h3>
-                            <p className="text-sm text-indigo-100 italic">&ldquo;Use suaempresa.com.br ao invés de Tratto.app&rdquo;</p>
-                            <Button className="w-full h-12 rounded-xl bg-white text-indigo-600 font-bold hover:bg-white/90">
-                                Ver Planos Pro
-                            </Button>
-                        </div>
-                    </Card>
-                </div>
+            {/* Two Column Layout - Trinks Style */}
+            <div className="grid md:grid-cols-2 gap-8">
+                <SettingsList items={systemSettings} title="Configurações do sistema" />
+                <SettingsList items={additionalSettings} title="Configurações adicionais" />
             </div>
+
+            {/* Quick Info Card */}
+            <Card className="p-6 rounded-xl border border-[#E2E8F0] shadow-sm bg-gradient-to-r from-[#FFF7ED] to-white">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-[#F97316] flex items-center justify-center flex-shrink-0">
+                        <Store className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="font-bold text-[#0F172A]">{currentTenant?.name}</h4>
+                        <p className="text-sm text-[#64748b]">
+                            Slug: <span className="font-mono text-[#F97316]">{slug}</span>
+                        </p>
+                    </div>
+                </div>
+            </Card>
         </div>
     )
 }
-
-

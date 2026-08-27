@@ -25,6 +25,10 @@ import {
     Home,
     Store,
     ChevronDown,
+    BarChart3,
+    Megaphone,
+    Gift,
+    MessageSquare,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -73,6 +77,19 @@ export function Sidebar() {
             items: [
                 { icon: DollarSign, label: "Financeiro", href: `/${slug}/financeiro`, permission: null },
                 { icon: ClipboardList, label: "Fechamento Diário", href: `/${slug}/fechamento`, permission: null },
+            ]
+        },
+        {
+            title: "Relatórios",
+            items: [
+                { icon: BarChart3, label: "Relatórios", href: `/${slug}/relatorios`, permission: null },
+            ]
+        },
+        {
+            title: "Marketing",
+            items: [
+                { icon: Gift, label: "Cupons", href: `/${slug}/marketing/cupons`, permission: null },
+                { icon: MessageSquare, label: "Automações WhatsApp", href: `/${slug}/marketing/whatsapp`, permission: null },
             ]
         }
     ]
