@@ -7,8 +7,8 @@ import { AuthProvider } from "@/contexts/auth-context";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "Tratto - Sistema de Gestão para Salões",
-  description: "Plataforma completa para gestão de salões de beleza",
+  title: "Tratto - CRM para Salões, Barbearias e Estéticas",
+  description: "CRM de beleza criado para reduzir retrabalho, conectar agenda, clientes, profissionais e financeiro, com integrações úteis e preço justo.",
 };
 
 export default function RootLayout({
@@ -37,5 +37,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-

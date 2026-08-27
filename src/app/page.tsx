@@ -56,89 +56,89 @@ import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 
 const heroStats = [
-  { label: "Salões ativos", value: "500+" },
-  { label: "Agendamentos/mês", value: "150k+" },
-  { label: "Satisfação NPS", value: "96" },
-  { label: "ROI médio", value: "340%" },
+  { label: "Origem", value: "real" },
+  { label: "Integrações", value: "úteis" },
+  { label: "Trial", value: "30d" },
+  { label: "Preço", value: "justo" },
 ]
 
 const mainFeatures = [
   {
-    title: "Agenda Inteligente",
-    description: "Sistema que se adapta ao seu tamanho: 1 profissional ou 100. Identifica disponibilidade automaticamente e maximiza ocupação.",
+    title: "Agenda sem confusão",
+    description: "Organize horários por profissional, acompanhe status dos atendimentos e pare de depender de ajustes manuais na recepção.",
     icon: Calendar,
     gradient: "from-blue-600 to-indigo-600",
     details: [
-      "De 1 a ilimitados profissionais",
-      "Gestão automática de salas/espaços",
-      "Agendamento online 24/7 para clientes",
-      "Lembretes automáticos por WhatsApp",
-      "Reduz no-show em até 85%"
+      "Agenda por profissional",
+      "Status de atendimento claros",
+      "Remarcações e cancelamentos no fluxo",
+      "Visão diária para a recepção",
+      "Base para confirmação, lembretes e retornos"
     ]
   },
   {
-    title: "Portal do Cliente Completo",
-    description: "Seus clientes têm um portal exclusivo onde agendam, compram produtos da sua loja, acumulam pontos e recebem suas promoções.",
+    title: "Portal do cliente com a sua marca",
+    description: "Tenha uma página pública para apresentar serviços, receber agendamentos e deixar o cliente dentro do seu ecossistema.",
     icon: Smartphone,
     gradient: "from-purple-600 to-pink-600",
     details: [
-      "Agendamento self-service 24/7",
-      "Loja online integrada (seus produtos)",
-      "Programa de fidelidade automático",
-      "Recebe suas promoções e cupons",
-      "Histórico completo de atendimentos"
+      "Página pública por negócio",
+      "Fluxo de agendamento online",
+      "Área de cliente",
+      "Histórico de atendimentos",
+      "Experiência com a marca do seu negócio"
     ]
   },
   {
-    title: "Gestão de Equipe Completa",
-    description: "Cadastre funcionários, defina horários, salas e comissões. Sistema calcula tudo automaticamente, seja 1 ou 100 profissionais.",
+    title: "Profissionais, não cadastro solto",
+    description: "Cadastre quem atende, quais serviços faz, seus horários e as regras que impactam agenda, comissão e fechamento.",
     icon: Users2,
     gradient: "from-green-600 to-emerald-600",
     details: [
-      "Cadastro ilimitado de profissionais",
-      "Controle de ponto digital",
-      "Comissões calculadas automaticamente",
+      "Cadastro de profissionais",
+      "Controle ativo/inativo",
+      "Regras de comissão",
       "Agendas individuais por profissional",
-      "Gestão de salas e espaços"
+      "Permissões de acesso"
     ]
   },
   {
-    title: "Marketing Direto",
-    description: "Envie promoções, cupons e ofertas direto para o portal dos seus clientes. Automações inteligentes para aumentar vendas.",
+    title: "CRM que vira retorno",
+    description: "Mantenha clientes, histórico e segmentos prontos para reativar quem sumiu, lembrar manutenção e vender com contexto.",
     icon: Megaphone,
     gradient: "from-orange-600 to-red-600",
     details: [
-      "Envie promoções para portal do cliente",
-      "Cupons de desconto personalizados",
-      "Campanhas automáticas de WhatsApp",
-      "Recuperação de clientes inativos",
-      "Mensagens de aniversário automáticas"
+      "Cadastro e busca de clientes",
+      "Histórico de atendimentos",
+      "Segmentos salvos",
+      "Base para retornos",
+      "Organização para campanhas e automações"
     ]
   },
   {
-    title: "Loja Online Integrada",
-    description: "Venda produtos online! Seus produtos aparecem no portal do cliente cadastrado. Eles compram direto pelo celular.",
+    title: "Serviços e produtos no mesmo lugar",
+    description: "Centralize serviços, preços, duração, categorias e produtos para a agenda conversar com o caixa e o estoque.",
     icon: Store,
     gradient: "from-cyan-600 to-blue-600",
     details: [
-      "Catálogo de produtos no portal do cliente",
-      "Clientes compram pelo app/site",
-      "Controle de estoque automático",
-      "Combos e pacotes promocionais",
-      "Pagamento online ou presencial"
+      "Cadastro de serviços",
+      "Categorias e preços",
+      "Duração por atendimento",
+      "Produtos e estoque",
+      "Combos e pacotes"
     ]
   },
   {
-    title: "Gestão Financeira Total",
-    description: "Fluxo de caixa, comissões, metas e relatórios completos. Veja exatamente quanto cada profissional está faturando.",
+    title: "Financeiro que acompanha a agenda",
+    description: "Acompanhe valores dos atendimentos, comissões e fechamento diário sem planilha paralela para fechar conta.",
     icon: DollarSign,
     gradient: "from-violet-600 to-purple-600",
     details: [
-      "Fluxo de caixa em tempo real",
+      "Fechamento diário",
       "Comissões por profissional",
-      "Metas e KPIs individuais",
-      "PDV rápido e intuitivo",
-      "Relatórios gerenciais completos"
+      "Valores por atendimento",
+      "Resumo financeiro",
+      "Base para conferência de caixa"
     ]
   },
 ]
@@ -146,29 +146,29 @@ const mainFeatures = [
 const howItWorksSteps = [
   {
     step: "1",
-    title: "Você configura seu salão",
-    description: "Cadastra seus profissionais (1 ou quantos tiver), define salas, horários e serviços. Sistema se adapta ao seu tamanho.",
+    title: "Traga sua rotina atual",
+    description: "Cadastre profissionais, serviços, horários, clientes e regras que hoje ficam espalhadas.",
     icon: Settings,
     color: "from-blue-600 to-indigo-600"
   },
   {
     step: "2",
-    title: "Clientes agendam online 24/7",
-    description: "Seus clientes entram no portal, veem horários disponíveis e agendam sozinhos. Sistema identifica automaticamente a disponibilidade.",
+    title: "Rode a agenda do dia",
+    description: "Acompanhe marcações, remarcações, cancelamentos, faltas e conclusões sem perder o histórico.",
     icon: Calendar,
     color: "from-purple-600 to-pink-600"
   },
   {
     step: "3",
-    title: "Você vende mais pelo portal",
-    description: "Cadastra produtos na loja, manda promoções e cupons. Clientes compram produtos direto pelo portal deles.",
+    title: "Use o CRM para vender melhor",
+    description: "Transforme histórico em retorno: manutenção, reativação, indicação, oferta e acompanhamento.",
     icon: ShoppingBag,
     color: "from-green-600 to-emerald-600"
   },
   {
     step: "4",
-    title: "Sistema gerencia tudo automaticamente",
-    description: "Confirmações, lembretes, comissões, estoque e relatórios. Tudo calculado e organizado automaticamente.",
+    title: "Feche caixa e comissão",
+    description: "Confira valores, formas de pagamento e comissões ligadas ao que realmente aconteceu na agenda.",
     icon: Zap,
     color: "from-orange-600 to-red-600"
   },
@@ -176,33 +176,33 @@ const howItWorksSteps = [
 
 const clientPortalFeatures = [
   {
-    title: "Agendamento Self-Service",
-    description: "Cliente vê horários disponíveis e agenda sozinho, 24/7",
+    title: "Agendamento Online",
+    description: "Cliente solicita horário pelo portal do próprio negócio",
     icon: Calendar
   },
   {
-    title: "Loja de Produtos",
-    description: "Compra seus produtos online direto pelo portal",
+    title: "Catálogo de Produtos",
+    description: "Produtos, combos e ofertas deixam de ficar perdidos",
     icon: ShoppingBag
   },
   {
-    title: "Programa de Fidelidade",
-    description: "Acumula pontos e troca por recompensas",
+    title: "Área do Cliente",
+    description: "Dados e histórico ficam acessíveis para atender melhor",
     icon: Gift
   },
   {
-    title: "Recebe Promoções",
-    description: "Vê suas ofertas e cupons de desconto exclusivos",
+    title: "Relacionamento",
+    description: "Base preparada para retornos, ofertas e mensagens",
     icon: Tag
   },
   {
-    title: "Histórico Completo",
-    description: "Acessa histórico de todos atendimentos",
+    title: "Histórico",
+    description: "Cada atendimento fortalece o cadastro do cliente",
     icon: FileText
   },
   {
-    title: "Notificações",
-    description: "Recebe lembretes e ofertas personalizadas",
+    title: "Lembretes",
+    description: "Estrutura pronta para confirmações e manutenção",
     icon: Bell
   },
 ]
@@ -210,27 +210,27 @@ const clientPortalFeatures = [
 const businessBenefits = [
   {
     icon: Users2,
-    title: "Flexível para qualquer tamanho",
-    description: "1 profissional ou 100? Sistema se adapta. Pequeno salão ou rede de franquias.",
-    stat: "1 a ∞"
+    title: "Nasceu de dor real",
+    description: "Criado por quem paga caro, usa sistema todo dia e sabe onde a operação trava.",
+    stat: "real"
   },
   {
     icon: Store,
-    title: "Venda produtos online",
-    description: "Seus produtos aparecem no portal do cliente. Vendas automáticas 24/7.",
-    stat: "+60%"
+    title: "Preço sem susto",
+    description: "A ideia é entregar o essencial bem feito sem mensalidade absurda para salão pequeno.",
+    stat: "justo"
   },
   {
     icon: Megaphone,
-    title: "Comunicação direta com clientes",
-    description: "Envie promoções e cupons direto pro portal. Eles veem na hora.",
-    stat: "Tempo real"
+    title: "Integração como padrão",
+    description: "O que hoje fica solto entre agenda, WhatsApp, cliente e financeiro precisa conversar.",
+    stat: "conecta"
   },
   {
     icon: Calendar,
-    title: "Agendamentos automáticos",
-    description: "Cliente agenda sozinho. Sistema gerencia disponibilidade automaticamente.",
-    stat: "75% online"
+    title: "Suporte ao dono",
+    description: "Produto pensado para ser intuitivo e resolver rotina, não criar dependência de suporte.",
+    stat: "simples"
   },
 ]
 
@@ -241,12 +241,12 @@ const detailedModules = [
     color: "text-blue-600",
     bg: "bg-blue-50",
     features: [
-      "Cadastro ilimitado de funcionários",
-      "Sistema se adapta: 1 ou 100 profissionais",
+      "Cadastro de profissionais",
+      "Status ativo ou inativo",
       "Controle de horários individuais",
-      "Gestão de salas/espaços por profissional",
-      "Comissões automáticas por pessoa",
-      "Metas e performance individual"
+      "Serviços atendidos por profissional",
+      "Comissões por pessoa",
+      "Permissões de acesso"
     ]
   },
   {
@@ -255,39 +255,39 @@ const detailedModules = [
     color: "text-purple-600",
     bg: "bg-purple-50",
     features: [
-      "Cliente agenda online sozinho",
-      "Acessa loja de produtos do salão",
-      "Vê e usa cupons de desconto",
-      "Programa de pontos automático",
-      "Recebe suas promoções",
+      "Página pública do negócio",
+      "Agendamento online",
+      "Cadastro do cliente",
+      "Área de acompanhamento",
+      "Base para promoções futuras",
       "Histórico de atendimentos"
     ]
   },
   {
-    category: "Marketing & Vendas",
+    category: "CRM & Relacionamento",
     icon: Megaphone,
     color: "text-pink-600",
     bg: "bg-pink-50",
     features: [
-      "Envie promoções pro portal do cliente",
-      "Crie cupons de desconto",
-      "Campanhas automáticas de WhatsApp",
-      "Recuperação de clientes inativos",
-      "Mensagens de aniversário",
-      "Pesquisas de satisfação"
+      "Cadastro completo de clientes",
+      "Busca e filtros",
+      "Segmentos salvos",
+      "Histórico por cliente",
+      "Base para reativação",
+      "Organização de oportunidades"
     ]
   },
   {
-    category: "Loja Online",
+    category: "Serviços e Produtos",
     icon: Store,
     color: "text-green-600",
     bg: "bg-green-50",
     features: [
-      "Catálogo aparece no portal do cliente",
-      "Clientes compram online 24/7",
-      "Controle de estoque automático",
+      "Catálogo de serviços",
+      "Preço e duração por serviço",
+      "Controle de produtos",
       "Combos e pacotes promocionais",
-      "Pagamento online integrado",
+      "Estoque operacional",
       "Alertas de reposição"
     ]
   },
@@ -297,12 +297,12 @@ const detailedModules = [
     color: "text-yellow-600",
     bg: "bg-yellow-50",
     features: [
-      "Confirmações automáticas",
-      "Lembretes por WhatsApp/SMS",
-      "Cálculo de comissões automático",
+      "Confirmações de agenda",
+      "Base para lembretes",
+      "Cálculo de comissões",
       "Gestão de disponibilidade",
       "Follow-up pós-atendimento",
-      "Reativação de inativos"
+      "Base para reativação"
     ]
   },
   {
@@ -311,12 +311,12 @@ const detailedModules = [
     color: "text-orange-600",
     bg: "bg-orange-50",
     features: [
-      "Fluxo de caixa em tempo real",
-      "PDV rápido e intuitivo",
-      "Múltiplas formas de pagamento",
+      "Fechamento diário",
+      "Valores por atendimento",
+      "Formas de pagamento",
       "Comissões por profissional",
-      "Relatórios gerenciais",
-      "Metas e previsões"
+      "Resumo gerencial",
+      "Conferência operacional"
     ]
   },
 ]
@@ -331,24 +331,24 @@ const integrations = [
 
 const benefits = [
   {
-    stat: "85%",
-    label: "Redução de no-show",
-    description: "Com lembretes automáticos via WhatsApp"
+    stat: "24/7",
+    label: "Portal próprio",
+    description: "Presença digital para o cliente entrar pelo link do negócio"
   },
   {
-    stat: "60%",
-    label: "Aumento em vendas de produtos",
-    description: "Com loja online no portal do cliente"
+    stat: "1",
+    label: "Operação conectada",
+    description: "Agenda, clientes, profissionais, serviços e caixa juntos"
   },
   {
-    stat: "75%",
-    label: "Agendamentos online",
-    description: "Clientes agendam sozinhos, sem ligar"
+    stat: "D+0",
+    label: "Caixa conferido",
+    description: "Fechamento diário sem depender de planilha paralela"
   },
   {
-    stat: "4.5x",
-    label: "ROI em 6 meses",
-    description: "Retorno comprovado por clientes"
+    stat: "CRM",
+    label: "Retorno com contexto",
+    description: "Histórico pronto para lembrar, reativar e vender melhor"
   },
 ]
 
@@ -356,13 +356,13 @@ const defaultPlans = [
   {
     name: "Trial Grátis",
     price: "0",
-    period: "15 dias",
-    description: "Teste tudo sem compromisso",
+    period: "30 dias",
+    description: "Teste a operação antes de assinar",
     features: [
-      "Acesso TOTAL a todas funções",
-      "Agendamento Online",
-      "Financeiro Completo",
-      "Clube de Fidelidade",
+      "Cadastro de clientes e profissionais",
+      "Agenda online",
+      "Serviços e financeiro",
+      "Portal público",
       "Sem cartão de crédito"
     ],
     cta: "Criar conta grátis",
@@ -375,9 +375,9 @@ const defaultPlans = [
     description: "Para profissionais autônomos",
     features: [
       "Até 2 profissionais",
-      "Cobrança recorrente (Assinaturas)",
-      "Agendamento Online",
-      "Lembretes WhatsApp basic",
+      "Agenda online",
+      "Cadastro de clientes",
+      "Serviços e comissões",
       "Relatórios básicos"
     ],
     cta: "Assinar Pro",
@@ -390,11 +390,11 @@ const defaultPlans = [
     description: "Para salões em crescimento",
     features: [
       "Até 5 profissionais",
-      "Financeiro Avançado (DRE)",
-      "Cálculo de Comissões Automático",
-      "Estoque Inteligente",
-      "Marketing (E-mail/SMS)",
-      "Clube de Fidelidade",
+      "Financeiro operacional",
+      "Cálculo de comissões",
+      "Estoque e produtos",
+      "CRM e segmentos",
+      "Portal público",
       "Sem taxa de adesão",
     ],
     cta: "Assinar Premium",
@@ -406,12 +406,12 @@ const defaultPlans = [
     period: "mês",
     description: "Para grandes redes e franquias",
     features: [
-      "Profissionais Ilimitados",
-      "Multi-unidades (Franquias)",
-      "Domínio Personalizado (.com.br)",
-      "Gerente de Conta Exclusivo",
-      "API Aberta",
-      "White Label (Sua marca)",
+      "Profissionais ilimitados",
+      "Multiunidades",
+      "Domínio personalizado",
+      "Acompanhamento de implantação",
+      "Recursos avançados por demanda",
+      "Suporte prioritário",
     ],
     cta: "Falar com Consultor",
     popular: false,
@@ -420,58 +420,58 @@ const defaultPlans = [
 
 const testimonials = [
   {
-    name: "Ana Ferreira",
-    role: "Proprietária",
-    company: "Studio Ana - 3 profissionais",
-    avatar: "AF",
-    quote: "O Tratto organizou nosso financeiro de um jeito que nunca vi. O cálculo de comissão automático me economiza 3 dias por mês. Vale cada centavo do Premium.",
+    name: "Salão com equipe",
+    role: "Agenda e comissão",
+    company: "Recepção + profissionais",
+    avatar: "SE",
+    quote: "A agenda precisa conversar com comissão e fechamento. O Tratto organiza essa cadeia sem planilha paralela.",
     rating: 5,
-    metric: "+30% lucro líquido"
+    metric: "Menos retrabalho"
   },
   {
-    name: "Roberto Silva",
-    role: "Dono",
-    company: "Barber King - 8 unidades",
-    avatar: "RS",
-    quote: "Gerencio minhas 8 barbearias em uma tela só. O plano Elite com multi-unidades é perfeito. O cliente tem pontos de fidelidade que valem em qualquer unidade.",
+    name: "Barbearia",
+    role: "Serviços e horários",
+    company: "Atendimento recorrente",
+    avatar: "BR",
+    quote: "O dono precisa ver horários, retornos e caixa sem garimpar informação em várias telas ou conversas.",
     rating: 5,
-    metric: "Gestão centralizada"
+    metric: "Rotina clara"
   },
   {
-    name: "Carla Dias",
-    role: "Esteticista",
-    company: "Autônoma",
-    avatar: "CD",
-    quote: "Comecei com o Trial e já fechei o plano Pro. Meus clientes adoram agendar pelo link no Instagram. Simples e chique, combina com meu trabalho.",
+    name: "Profissional solo",
+    role: "Cliente e retorno",
+    company: "Agenda individual",
+    avatar: "PS",
+    quote: "Quem atende sozinho também precisa parecer profissional, lembrar clientes e não pagar por estrutura que não usa.",
     rating: 5,
-    metric: "Agenda cheia"
+    metric: "Preço justo"
   },
 ]
 
 const faqs = [
   {
+    question: "Por que criar outro sistema se já existe Trinks?",
+    answer: "Porque na operação real ainda sobram dor, custo alto, pouca integração e telas que nem sempre são intuitivas. O Tratto nasce para ser uma alternativa mais simples, conectada e justa."
+  },
+  {
     question: "Funciona para salão pequeno com 1 profissional?",
-    answer: "SIM! O sistema se adapta perfeitamente. Se você tem 1 profissional, ele gerencia apenas 1 agenda. Se tem 100, gerencia 100. Você paga pelo plano, não por número de profissionais."
+    answer: "Sim. O Tratto foi pensado para operar desde uma agenda individual até equipes maiores, com profissionais, serviços e horários separados."
   },
   {
-    question: "Como meus clientes veem minha loja de produtos?",
-    answer: "Quando o cliente se cadastra no seu salão, ele ganha acesso ao portal dele. Lá dentro ele vê seu catálogo de produtos, pode comprar online e acumular pontos. Tudo integrado!"
+    question: "O que vai integrar melhor do que sistemas tradicionais?",
+    answer: "A prioridade é conectar agenda, cliente, WhatsApp, retornos, serviços, produtos, comissões e fechamento em um fluxo mais direto para o dono e para a recepção."
   },
   {
-    question: "Posso enviar promoções pros meus clientes?",
-    answer: "SIM! Você cria promoções e cupons que aparecem automaticamente no portal de cada cliente. Pode também enviar por WhatsApp, email ou SMS. Tudo em poucos cliques."
+    question: "Como a agenda evita conflito de horário?",
+    answer: "A agenda considera profissionais, serviços, duração e horários configurados para evitar choque de atendimento."
   },
   {
-    question: "Sistema identifica disponibilidade automaticamente?",
-    answer: "Sim! Você define os horários de cada profissional e salas disponíveis. O sistema cruza tudo automaticamente e mostra só os horários livres pro cliente agendar."
+    question: "Vou precisar mudar tudo de uma vez?",
+    answer: "Não. O caminho certo é começar pelo operacional: profissionais, serviços, clientes, agenda e fechamento. Depois entram automações e integrações mais avançadas."
   },
   {
-    question: "Quanto tempo leva para implementar?",
-    answer: "De 1 a 3 dias. Você cadastra seus profissionais, serviços e produtos. Nosso time te ajuda no onboarding. Em 1 semana você está vendendo online e recebendo agendamentos automáticos."
-  },
-  {
-    question: "Funciona para rede com várias unidades?",
-    answer: "Perfeitamente! Você gerencia todas as unidades em um único painel. Cada uma tem seu catálogo, profissionais e clientes. Relatórios consolidados de tudo."
+    question: "É só uma landing bonita ou já tem produto?",
+    answer: "O Tratto já está sendo construído como sistema real, com base multiempresa, agenda, clientes, profissionais, serviços, financeiro e portal público em evolução."
   },
 ]
 
@@ -548,7 +548,7 @@ export default function LandingPage() {
               Preços
             </a>
             <a href="#testimonials" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-              Cases
+              Uso
             </a>
             <Link href="/login">
               <Button variant="ghost" size="sm" className="text-sm font-medium text-gray-900 hover:bg-gray-100">
@@ -577,7 +577,7 @@ export default function LandingPage() {
               transition={{ duration: 0.6 }}
             >
               <Badge className="rounded-full px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white border-none text-xs font-semibold mb-6 shadow-lg">
-                ✨ Sistema completo de 1 a infinitos profissionais
+                Nascido da rotina real de um salão
               </Badge>
             </motion.div>
 
@@ -587,9 +587,9 @@ export default function LandingPage() {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-6xl md:text-8xl font-black tracking-tight text-gray-900 leading-[1.05]"
             >
-              Clientes agendam sozinhos
+              O CRM de beleza para
               <br />
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">e compram seus produtos</span>
+              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">quem cansou do sistema caro</span>
             </motion.h1>
 
             <motion.p
@@ -598,9 +598,9 @@ export default function LandingPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto font-normal leading-relaxed"
             >
-              Portal exclusivo onde seus clientes <strong>agendam 24/7, veem sua loja de produtos, recebem promoções e acumulam pontos</strong>.
+              O Tratto nasceu da dor de pagar caro por um sistema pouco intuitivo, com suporte difícil e integrações que não acompanham a rotina.
               <br />
-              Você gerencia tudo: de 1 a 100 profissionais, salas e unidades.
+              A ideia é simples: <strong>agenda, clientes, profissionais, serviços, financeiro e automações</strong> no mesmo fluxo, com preço justo.
             </motion.p>
 
             <motion.div
@@ -610,7 +610,7 @@ export default function LandingPage() {
               className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6"
             >
               <Button size="lg" className="rounded-full h-14 px-10 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-base font-semibold gap-2 shadow-2xl shadow-blue-500/40">
-                Começar teste grátis 14 dias <ArrowRight className="w-5 h-5" />
+                Começar teste grátis 30 dias <ArrowRight className="w-5 h-5" />
               </Button>
               <Button size="lg" variant="outline" className="rounded-full h-14 px-8 text-base font-medium gap-3 group border-2">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -641,10 +641,10 @@ export default function LandingPage() {
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-5xl font-black mb-4">
-                Do pequeno salão à grande rede
+                Por que o Tratto existe
               </h2>
               <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-                Sistema flexível que cresce com seu negócio
+                Para resolver as dores que sistemas grandes deixaram na operação
               </p>
             </div>
 
@@ -680,9 +680,9 @@ export default function LandingPage() {
                 COMO FUNCIONA
               </Badge>
               <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6 leading-tight">
-                Simples para você.
+                Troque sistema engessado
                 <br />
-                <span className="text-gray-400">Perfeito para seus clientes.</span>
+                <span className="text-gray-400">por rotina conectada.</span>
               </h2>
             </div>
 
@@ -728,13 +728,13 @@ export default function LandingPage() {
           <div className="max-w-7xl mx-auto">
             <div className="text-center max-w-3xl mx-auto mb-20">
               <Badge className="rounded-full px-4 py-1.5 bg-blue-50 text-blue-700 border-none text-xs font-semibold mb-4">
-                RECURSOS COMPLETOS
+                RECURSOS PRINCIPAIS
               </Badge>
               <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6 leading-tight">
-                Tudo em um só sistema
+                O básico que precisa funcionar bem
               </h2>
               <p className="text-xl text-gray-600 font-normal">
-                Ferramentas profissionais para gerenciar, vender e crescer
+                Antes de enfeite, o Tratto resolve o dia a dia
               </p>
             </div>
 
@@ -788,7 +788,7 @@ export default function LandingPage() {
                 <span className="text-gray-400">veem e fazem</span>
               </h2>
               <p className="text-xl text-gray-600">
-                Cada cliente cadastrado ganha acesso a um portal exclusivo do SEU salão
+                Para o cliente agendar, voltar e comprar sem depender só do balcão
               </p>
             </div>
 
@@ -866,12 +866,12 @@ export default function LandingPage() {
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-20">
               <Badge className="rounded-full px-4 py-1.5 bg-green-50 text-green-700 border-none text-xs font-semibold mb-4">
-                RESULTADOS COMPROVADOS
+                IMPACTO OPERACIONAL
               </Badge>
               <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6">
-                Impacto real no
+                Menos custo escondido.
                 <br />
-                seu faturamento
+                Mais controle.
               </h2>
             </div>
 
@@ -910,7 +910,7 @@ export default function LandingPage() {
                 com você
               </h2>
               <p className="text-xl text-gray-600">
-                Do solo ao time de 100. Escolha seu plano.
+                Sem mensalidade absurda para começar a organizar o negócio.
               </p>
             </div>
 
@@ -982,7 +982,7 @@ export default function LandingPage() {
 
             <div className="text-center mt-12">
               <p className="text-gray-600">
-                Todos os planos incluem • <strong>Teste grátis 14 dias</strong> • <strong>Sem cartão</strong> • <strong>Cancele quando quiser</strong>
+                Todos os planos incluem • <strong>Teste grátis 30 dias</strong> • <strong>Sem cartão</strong> • <strong>Cancele quando quiser</strong>
               </p>
             </div>
           </div>
@@ -993,15 +993,15 @@ export default function LandingPage() {
           <div className="max-w-7xl mx-auto">
             <div className="text-center max-w-3xl mx-auto mb-20">
               <Badge className="rounded-full px-4 py-1.5 bg-purple-50 text-purple-700 border-none text-xs font-semibold mb-4">
-                CASES REAIS
+                CENÁRIOS DE USO
               </Badge>
               <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6">
-                Funciona para todos
+                Pensado para quem
                 <br />
-                <span className="text-gray-400">os tamanhos</span>
+                <span className="text-gray-400">vive a operação</span>
               </h2>
               <p className="text-xl text-gray-600">
-                De 1 profissional a redes com dezenas
+                Não para parecer moderno. Para trabalhar melhor.
               </p>
             </div>
 
@@ -1088,14 +1088,14 @@ export default function LandingPage() {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-5xl md:text-7xl font-black text-white mb-8 leading-tight">
-                Pronto para vender mais
+                Pare de pagar caro
                 <br />
-                trabalhando menos?
+                para sofrer na rotina.
               </h2>
               <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto font-normal">
-                Comece hoje. Seus clientes agendando sozinhos e comprando produtos online.
+                Comece pelo que sustenta o salão: agenda, clientes, profissionais, serviços, financeiro e integrações úteis.
                 <br />
-                <strong className="text-white">14 dias grátis</strong>, sem cartão de crédito.
+                <strong className="text-white">30 dias grátis</strong>, sem cartão de crédito.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
                 <Button size="lg" className="rounded-full h-16 px-12 bg-white hover:bg-gray-100 text-gray-900 text-lg font-bold gap-2 shadow-2xl">
@@ -1114,7 +1114,7 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-green-400" />
-                  <span>14 dias grátis</span>
+                  <span>30 dias grátis</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-green-400" />
@@ -1138,7 +1138,7 @@ export default function LandingPage() {
                 <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Tratto</span>
               </div>
               <p className="text-gray-600 mb-6 leading-relaxed font-medium">
-                Sistema completo para salões: clientes agendam sozinhos, compram produtos e você gerencia tudo em um só lugar.
+                CRM para salões, barbearias e estéticas organizarem agenda, clientes, profissionais, financeiro e integrações em um só lugar.
               </p>
               <div className="flex gap-3">
                 <div className="w-10 h-10 rounded-full bg-gray-200 hover:bg-blue-600 flex items-center justify-center cursor-pointer transition-all group">
@@ -1164,7 +1164,7 @@ export default function LandingPage() {
               <h4 className="font-bold mb-4 text-gray-900 text-sm uppercase tracking-wider">Empresa</h4>
               <ul className="space-y-3">
                 <li><a href="#" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">Sobre</a></li>
-                <li><a href="#testimonials" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">Cases</a></li>
+                <li><a href="#testimonials" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">Uso</a></li>
                 <li><a href="#" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">Contato</a></li>
               </ul>
             </div>
@@ -1192,5 +1192,3 @@ export default function LandingPage() {
     </div>
   )
 }
-
-
