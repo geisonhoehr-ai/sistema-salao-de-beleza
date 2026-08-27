@@ -22,6 +22,42 @@ o Tratto mais nativo no celular e menos parecido com pagina web adaptada.
 - O usuario operacional precisa chegar rapido em agenda, acoes, comissoes,
   clientes e opcoes.
 
+## Estado atual observado no Tratto
+
+Referencia enviada por Oseias: tela mobile em `gotratto.com.br`, painel da
+empresa Aura Salao de Beleza.
+
+Pontos que reforcam a percepcao de "web no mobile":
+
+- Navegacao principal depende de botao de menu no topo, com cara de sidebar
+  recolhida.
+- O topo ocupa uma faixa relevante com menu, tema, notificacoes, avatar e seta,
+  mas nao entrega as acoes mais frequentes.
+- A tela comeca com "Visao Geral" e cards de metricas, mas nao oferece caminho
+  direto para agenda, cliente, acoes e financeiro no polegar.
+- O link de agendamento aparece cedo, mas compete com tarefas operacionais mais
+  urgentes para uso diario.
+- Cards de resumo ocupam muita altura no primeiro scroll, fazendo a tela parecer
+  dashboard desktop empilhado.
+- O navegador mobile fica com barra inferior propria; sem bottom navigation do
+  produto, a experiencia parece mais site aberto no browser do que app.
+- Falta uma camada de acoes rapidas clara para recepcao, dono e profissional.
+
+Leitura: o problema nao e somente estetico. A hierarquia mobile atual prioriza
+resumo e configuracoes no topo, enquanto o uso diario pede navegacao persistente
+e atalhos de execucao.
+
+## Comparacao objetiva
+
+| Tema | Trinks observado | Tratto atual observado | Direcao para Tratto |
+| --- | --- | --- | --- |
+| Navegacao | Bottom nav fixa | Menu superior/sidebar | Bottom nav mobile nas rotas autenticadas |
+| Acoes frequentes | Cards de acao no topo | Cards de metrica primeiro | Acoes rapidas antes dos indicadores |
+| Uso com uma mao | Itens no alcance do polegar | Controles concentrados no topo | Acoes principais na parte inferior |
+| Primeiro nivel | Operacional | Dashboard web responsivo | Home de operacao diaria |
+| Estado vazio | Mensagem direta no bloco | Numeros e cards grandes | Estado vazio com proxima acao |
+| Perfil | Parece app de rotina | Parece painel web | Experiencia mobile-first |
+
 ## Referencia observada no Trinks
 
 Pontos positivos da tela enviada:
@@ -70,6 +106,10 @@ Sugestao inicial:
 Regra: no desktop, manter sidebar/topbar atual se ela estiver funcionando. A
 bottom navigation deve ser prioridade para telas pequenas.
 
+No mobile, reduzir a dependencia do menu hamburguer. Ele pode continuar existindo
+para configuracoes secundarias, mas nao deve ser o principal caminho para tarefas
+do dia.
+
 ### 2. Home mobile operacional
 
 A primeira tela no mobile deve responder rapidamente:
@@ -89,6 +129,18 @@ Blocos sugeridos:
 - pendencias do dia;
 - comissao ou resumo financeiro conforme perfil;
 - atalhos para clientes e servicos.
+
+Ordem recomendada para o painel mobile:
+
+1. Negocio ativo + usuario + notificacoes.
+2. Acoes rapidas.
+3. Proximo compromisso ou agenda de hoje.
+4. Pendencias.
+5. Resumo financeiro/comissao.
+6. Link publico de agendamento.
+
+O link publico de agendamento e importante, mas nao deve ocupar prioridade acima
+de agendar cliente, abrir agenda e cadastrar cliente no uso interno diario.
 
 ### 3. Acoes rapidas
 
@@ -149,6 +201,18 @@ se a bottom nav entra apenas no app interno ou tambem no portal do cliente.
 3. Adicionar sheet de acoes rapidas.
 4. Ajustar dashboard mobile para blocos operacionais.
 5. Validar com screenshot mobile e fluxo de toque.
+
+## Backlog sugerido para Claude Code
+
+- Criar `src/components/layout/MobileBottomNav.tsx`.
+- Criar `src/components/layout/MobileQuickActionsSheet.tsx`.
+- Ajustar `AppLayout` para renderizar bottom nav apenas em mobile.
+- Adicionar padding inferior no conteudo autenticado quando a bottom nav estiver
+  ativa.
+- Rever `src/app/(app)/dashboard/page.tsx` para priorizar acoes e agenda no
+  mobile.
+- Manter sidebar desktop sem mudanca nesta primeira fase.
+- Mapear permissoes antes de exibir Financeiro/Comissoes.
 
 ## Criterio de aceite
 
