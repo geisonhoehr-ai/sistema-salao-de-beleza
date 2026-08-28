@@ -110,6 +110,12 @@ export async function checkEmployeeAuth(
         return { exists: false, error: 'Profissional não encontrado' }
       }
 
+      // Block access if employee is inactive or deleted
+      if (employee.status !== 'active') {
+        await supabase.auth.signOut()
+        return { exists: false, error: 'Acesso deste profissional foi desativado pela empresa.' }
+      }
+
       return {
         exists: true,
         data: { ...authData, employee },

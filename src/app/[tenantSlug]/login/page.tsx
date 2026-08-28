@@ -62,6 +62,15 @@ export default function CustomerLoginPage() {
         fetchTenant()
     }, [tenantSlug, router])
 
+    // Check for auth error from blocked employee
+    useEffect(() => {
+        const authError = sessionStorage.getItem('authError')
+        if (authError) {
+            setError(authError)
+            sessionStorage.removeItem('authError')
+        }
+    }, [])
+
     const tenantInitials = useMemo(() => {
         if (!tenant) return 'TR'
         return getInitials(tenant.business_name || tenant.name || 'Tratto')

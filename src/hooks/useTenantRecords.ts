@@ -341,7 +341,7 @@ export function useTenantEmployees(tenantId?: string) {
             .from("employees")
             .select("*")
             .eq("tenant_id", tenantId)
-            .neq("status", "deleted")
+            .eq("status", "active") // Only show active employees
             .order("full_name", { ascending: true })
             .then(({ data: rows, error: queryError }) => {
                 if (!isMounted) return

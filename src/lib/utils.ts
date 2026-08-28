@@ -57,3 +57,31 @@ export function formatCurrency(value: number) {
         currency: 'BRL',
     }).format(value)
 }
+
+/**
+ * Normaliza CPF/CNPJ removendo todos os caracteres não numéricos.
+ * Usar ao salvar no banco e ao comparar documentos.
+ */
+export function normalizeDocument(value: string | null | undefined): string {
+    if (!value) return ''
+    return value.replace(/\D/g, '')
+}
+
+/**
+ * Formata CPF para exibição (000.000.000-00)
+ */
+export function formatCPF(value: string | null | undefined): string {
+    const numbers = normalizeDocument(value).slice(0, 11)
+    if (numbers.length <= 3) return numbers
+    if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`
+    if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`
+    return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9)}`
+}
+
+/**
+ * Valida se um CPF tem formato válido (11 dígitos)
+ */
+export function isValidCPF(value: string | null | undefined): boolean {
+    const numbers = normalizeDocument(value)
+    return numbers.length === 11
+}
