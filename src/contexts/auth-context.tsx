@@ -55,13 +55,19 @@ async function mapSupabaseUser(supabaseUser: SupabaseUser): Promise<User | null>
         }
     }
 
-    // For employee, fetch employee record
+    // For employee, fetch employee record and check status
     if (role === 'employee') {
         const { data: employee } = await supabase
             .from('employees')
-            .select('id, full_name, tenant_id')
+            .select('id, full_name, tenant_id, status')
             .eq('user_id', supabaseUser.id)
             .single()
+
+        // Block access if employee is inactive or deleted
+        if (employee && employee.status !== 'active') {
+            console.warn('[Auth] Employee access blocked - status:', employee.status)
+            return null // Will trigger sign out
+        }
 
         return {
             id: supabaseUser.id,
@@ -95,6 +101,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                 if (session?.user && isMounted) {
                     const mappedUser = await mapSupabaseUser(session.user)
+
+                    // If mapSupabaseUser returns null but we have a session user,
+                    // it means the employee was blocked (inactive/deleted)
+                    if (!mappedUser && session.user.user_metadata?.role === 'employee') {
+                        console.warn('[Auth] Employee blocked, signing out...')
+                        await supabase.auth.signOut()
+                        setUser(null)
+                        // Store error message for login page to display
+                        sessionStorage.setItem('authError', 'Acesso deste profissional foi desativado pela empresa.')
+                        return
+                    }
+
                     setUser(mappedUser)
                 } else if (isMounted) {
                     // DEMO FALLBACK: Check for demo session in storage
@@ -130,6 +148,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session?.user && isMounted) {
                 const mappedUser = await mapSupabaseUser(session.user)
+
+                // If employee is blocked, sign out
+                if (!mappedUser && session.user.user_metadata?.role === 'employee') {
+                    console.warn('[Auth] Employee blocked on sign in, signing out...')
+                    await supabase.auth.signOut()
+                    setUser(null)
+                    sessionStorage.setItem('authError', 'Acesso deste profissional foi desativado pela empresa.')
+                    return
+                }
+
                 setUser(mappedUser)
             } else if (event === 'SIGNED_OUT' && isMounted) {
                 setUser(null)
@@ -161,6 +189,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             const mappedUser = await mapSupabaseUser(data.user)
+
+            // If employee is blocked, sign out and return error
+            if (!mappedUser && data.user.user_metadata?.role === 'employee') {
+                console.warn('[Auth] Employee blocked on login, signing out...')
+                await supabase.auth.signOut()
+                sessionStorage.setItem('authError', 'Acesso deste profissional foi desativado pela empresa.')
+                return false
+            }
+
             setUser(mappedUser)
             return true
         } catch (error) {

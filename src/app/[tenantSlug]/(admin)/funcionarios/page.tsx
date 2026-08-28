@@ -50,7 +50,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTenantEmployees, useTenantServices } from "@/hooks/useTenantRecords"
 import { useTenant } from "@/contexts/tenant-context"
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
-import { cn } from "@/lib/utils"
+import { cn, normalizeDocument, formatCPF } from "@/lib/utils"
 import type { EmployeeRecord } from "@/types/catalog"
 import { UnavailabilityManager } from "@/components/employees/UnavailabilityManager"
 import { CommissionExceptionsManager } from "@/components/employees/CommissionExceptionsManager"
@@ -119,12 +119,14 @@ export default function FuncionariosPage() {
     const [cpfSearch, setCpfSearch] = useState("")
     const [searching, setSearching] = useState(false)
     const [cpfSearched, setCpfSearched] = useState(false)
+    const [searchError, setSearchError] = useState<string | null>(null)
+    const [inactiveEmployeeId, setInactiveEmployeeId] = useState<string | null>(null)
     const [foundPerson, setFoundPerson] = useState<{
         name: string
         email: string
         phone: string
         birthdate?: string
-        source: 'cliente' | 'profissional'
+        source: 'cliente' | 'profissional' | 'profissional_inativo'
     } | null>(null)
 
     const filteredEmployees = employees.filter(emp =>
@@ -135,16 +137,7 @@ export default function FuncionariosPage() {
         })
     )
 
-    // Format CPF for display/search
-    const formatCPF = (value: string) => {
-        const numbers = value.replace(/\D/g, '').slice(0, 11)
-        if (numbers.length <= 3) return numbers
-        if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`
-        if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`
-        return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9)}`
-    }
-
-    // Search for person by CPF
+    // Search for person by CPF - busca com e sem máscara
     const handleSearchCPF = async () => {
         if (!isSupabaseConfigured || !tenantId) {
             setCpfSearched(true)
@@ -158,65 +151,146 @@ export default function FuncionariosPage() {
         setSearching(true)
         setCpfSearched(false)
         setFoundPerson(null)
+        setSearchError(null)
+        setInactiveEmployeeId(null)
 
-        const cleanCPF = cpfSearch.replace(/\D/g, '')
+        const cleanCPF = normalizeDocument(cpfSearch)
+        const maskedCPF = formatCPF(cpfSearch)
 
-        // First check if already exists as employee
-        const { data: existingEmployee } = await supabase
-            .from("employees")
-            .select("full_name, document")
-            .eq("tenant_id", tenantId)
-            .eq("document", cleanCPF)
-            .eq("status", "active")
-            .single()
+        try {
+            // 1. Check if already exists as ACTIVE employee (with or without mask)
+            const { data: activeEmployees, error: activeError } = await supabase
+                .from("employees")
+                .select("id, full_name, email, phone, document, status")
+                .eq("tenant_id", tenantId)
+                .eq("status", "active")
+                .or(`document.eq.${cleanCPF},document.eq.${maskedCPF}`)
 
-        if (existingEmployee) {
+            if (activeError) {
+                console.error("[CPF Search] Erro ao buscar profissionais ativos:", activeError)
+                setSearchError("Erro ao buscar no sistema. Tente novamente.")
+                setSearching(false)
+                setCpfSearched(true)
+                return
+            }
+
+            if (activeEmployees && activeEmployees.length > 0) {
+                const emp = activeEmployees[0]
+                setSearching(false)
+                setCpfSearched(true)
+                setFoundPerson({
+                    name: emp.full_name,
+                    email: emp.email || '',
+                    phone: emp.phone || '',
+                    source: 'profissional'
+                })
+                return
+            }
+
+            // 2. Check if exists as INACTIVE/DELETED employee
+            const { data: inactiveEmployees } = await supabase
+                .from("employees")
+                .select("id, full_name, email, phone, document, status")
+                .eq("tenant_id", tenantId)
+                .in("status", ["inactive", "deleted"])
+                .or(`document.eq.${cleanCPF},document.eq.${maskedCPF}`)
+
+            if (inactiveEmployees && inactiveEmployees.length > 0) {
+                const emp = inactiveEmployees[0]
+                setSearching(false)
+                setCpfSearched(true)
+                setInactiveEmployeeId(emp.id)
+                setFoundPerson({
+                    name: emp.full_name,
+                    email: emp.email || '',
+                    phone: emp.phone || '',
+                    source: 'profissional_inativo'
+                })
+                // Pre-fill form with existing data for reactivation
+                setFormData(prev => ({
+                    ...prev,
+                    name: emp.full_name,
+                    email: emp.email || '',
+                    phone: emp.phone || '',
+                    document: cleanCPF,
+                }))
+                return
+            }
+
+            // 3. Search in customers table (with or without mask)
+            const { data: customers, error: customerError } = await supabase
+                .from("customers")
+                .select("full_name, email, phone, birthdate, document")
+                .eq("tenant_id", tenantId)
+                .or(`document.eq.${cleanCPF},document.eq.${maskedCPF}`)
+
+            if (customerError) {
+                console.error("[CPF Search] Erro ao buscar clientes:", customerError)
+            }
+
             setSearching(false)
             setCpfSearched(true)
-            setFoundPerson({
-                name: existingEmployee.full_name,
-                email: '',
-                phone: '',
-                source: 'profissional'
+
+            if (customers && customers.length > 0) {
+                const customer = customers[0]
+                setFoundPerson({
+                    name: customer.full_name,
+                    email: customer.email || '',
+                    phone: customer.phone || '',
+                    birthdate: customer.birthdate || '',
+                    source: 'cliente'
+                })
+                // Pre-fill the form
+                setFormData(prev => ({
+                    ...prev,
+                    name: customer.full_name,
+                    email: customer.email || '',
+                    phone: customer.phone || '',
+                    document: cleanCPF,
+                    birthdate: customer.birthdate || '',
+                }))
+            } else {
+                // Set just the CPF (normalized)
+                setFormData(prev => ({
+                    ...prev,
+                    document: cleanCPF,
+                }))
+            }
+        } catch (err) {
+            console.error("[CPF Search] Erro inesperado:", err)
+            setSearchError("Erro inesperado. Tente novamente.")
+            setSearching(false)
+            setCpfSearched(true)
+        }
+    }
+
+    // Reactivate inactive employee
+    const handleReactivateEmployee = async () => {
+        if (!inactiveEmployeeId || !tenantId) return
+
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return
+
+        setSaving(true)
+        const { error } = await supabase
+            .from("employees")
+            .update({
+                status: "active",
+                updated_at: new Date().toISOString()
             })
+            .eq("id", inactiveEmployeeId)
+            .eq("tenant_id", tenantId)
+
+        setSaving(false)
+
+        if (error) {
+            console.error("[Reactivate] Erro ao reativar profissional:", error)
             return
         }
 
-        // Search in customers table
-        const { data: customer } = await supabase
-            .from("customers")
-            .select("full_name, email, phone, birthdate, document")
-            .eq("tenant_id", tenantId)
-            .eq("document", cleanCPF)
-            .single()
-
-        setSearching(false)
-        setCpfSearched(true)
-
-        if (customer) {
-            setFoundPerson({
-                name: customer.full_name,
-                email: customer.email || '',
-                phone: customer.phone || '',
-                birthdate: customer.birthdate || '',
-                source: 'cliente'
-            })
-            // Pre-fill the form
-            setFormData(prev => ({
-                ...prev,
-                name: customer.full_name,
-                email: customer.email || '',
-                phone: customer.phone || '',
-                document: cleanCPF,
-                birthdate: customer.birthdate || '',
-            }))
-        } else {
-            // Set just the CPF
-            setFormData(prev => ({
-                ...prev,
-                document: cleanCPF,
-            }))
-        }
+        setShowNewEmployee(false)
+        resetForm()
+        refetch()
     }
 
     // Reset wizard when opening
@@ -225,6 +299,8 @@ export default function FuncionariosPage() {
         setCpfSearch('')
         setCpfSearched(false)
         setFoundPerson(null)
+        setSearchError(null)
+        setInactiveEmployeeId(null)
         resetForm()
         setShowNewEmployee(true)
     }
@@ -1019,23 +1095,60 @@ export default function FuncionariosPage() {
                                     {cpfSearched && (
                                         <div className={cn(
                                             "p-4 rounded-xl border",
-                                            foundPerson?.source === 'profissional'
+                                            searchError
                                                 ? "bg-red-50 border-red-200"
-                                                : foundPerson
-                                                    ? "bg-green-50 border-green-200"
-                                                    : "bg-[#F8F9FF] border-[#E2E8F0]"
+                                                : foundPerson?.source === 'profissional'
+                                                    ? "bg-red-50 border-red-200"
+                                                    : foundPerson?.source === 'profissional_inativo'
+                                                        ? "bg-amber-50 border-amber-200"
+                                                        : foundPerson
+                                                            ? "bg-green-50 border-green-200"
+                                                            : "bg-[#F8F9FF] border-[#E2E8F0]"
                                         )}>
-                                            {foundPerson?.source === 'profissional' ? (
+                                            {searchError ? (
                                                 <div className="flex items-center gap-3">
-                                                    <AlertCircle className="w-5 h-5 text-red-500" />
+                                                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                                                     <div>
-                                                        <p className="font-semibold text-red-700">Profissional já cadastrado</p>
-                                                        <p className="text-sm text-red-600">{foundPerson.name} já está cadastrado como profissional.</p>
+                                                        <p className="font-semibold text-red-700">Erro na busca</p>
+                                                        <p className="text-sm text-red-600">{searchError}</p>
                                                     </div>
                                                 </div>
-                                            ) : foundPerson ? (
+                                            ) : foundPerson?.source === 'profissional' ? (
                                                 <div className="flex items-center gap-3">
-                                                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                                                    <div>
+                                                        <p className="font-semibold text-red-700">Este CPF já pertence a um profissional ativo</p>
+                                                        <p className="text-sm text-red-600">{foundPerson.name} já está cadastrado no sistema.</p>
+                                                    </div>
+                                                </div>
+                                            ) : foundPerson?.source === 'profissional_inativo' ? (
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                                                        <div>
+                                                            <p className="font-semibold text-amber-700">Profissional desativado encontrado</p>
+                                                            <p className="text-sm text-amber-600">
+                                                                {foundPerson.name} foi desativado anteriormente. Deseja reativá-lo?
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        onClick={handleReactivateEmployee}
+                                                        disabled={saving}
+                                                        className="w-full rounded-lg h-10 bg-amber-500 hover:bg-amber-600 text-white font-medium"
+                                                    >
+                                                        {saving ? (
+                                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                                        ) : (
+                                                            <RefreshCw className="w-4 h-4 mr-2" />
+                                                        )}
+                                                        Reativar Profissional
+                                                    </Button>
+                                                </div>
+                                            ) : foundPerson?.source === 'cliente' ? (
+                                                <div className="flex items-center gap-3">
+                                                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                                                     <div>
                                                         <p className="font-semibold text-green-700">Cliente encontrado!</p>
                                                         <p className="text-sm text-green-600">
@@ -1045,7 +1158,7 @@ export default function FuncionariosPage() {
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-3">
-                                                    <UserSearch className="w-5 h-5 text-[#64748b]" />
+                                                    <UserSearch className="w-5 h-5 text-[#64748b] flex-shrink-0" />
                                                     <div>
                                                         <p className="font-semibold text-[#0F172A]">CPF não encontrado</p>
                                                         <p className="text-sm text-[#64748b]">
@@ -1058,8 +1171,8 @@ export default function FuncionariosPage() {
                                     )}
                                 </div>
 
-                                {/* Form Fields - Show after CPF search */}
-                                {cpfSearched && foundPerson?.source !== 'profissional' && (
+                                {/* Form Fields - Show after CPF search (not for active or error) */}
+                                {cpfSearched && !searchError && foundPerson?.source !== 'profissional' && foundPerson?.source !== 'profissional_inativo' && (
                                     <div className="space-y-4 pt-4 border-t border-[#E2E8F0]">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="col-span-2 space-y-2">
@@ -1119,8 +1232,8 @@ export default function FuncionariosPage() {
                                     </div>
                                 )}
 
-                                {/* Next Button */}
-                                {cpfSearched && foundPerson?.source !== 'profissional' && (
+                                {/* Next Button - only show if not blocked */}
+                                {cpfSearched && !searchError && foundPerson?.source !== 'profissional' && foundPerson?.source !== 'profissional_inativo' && (
                                     <div className="flex justify-end pt-4">
                                         <Button
                                             type="button"
@@ -1307,9 +1420,10 @@ export default function FuncionariosPage() {
             <ConfirmDialog
                 open={showConfirm}
                 onOpenChange={setShowConfirm}
-                title="Remover Profissional?"
-                description="Esta ação removerá o acesso do profissional ao sistema. Os dados históricos permanecerão salvos."
+                title={`Desativar ${selectedEmployee?.fullName || 'profissional'}?`}
+                description={`${selectedEmployee?.fullName || 'Este profissional'} sairá da lista e não poderá acessar o CRM, mas o histórico de agenda e comissões permanece salvo.`}
                 onConfirm={() => selectedEmployee && handleDeleteEmployee(selectedEmployee)}
+                confirmLabel="Desativar Profissional"
                 variant="destructive"
             />
         </div>
